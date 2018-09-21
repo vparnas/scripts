@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# executes the last file in the directory via the app supplied in the parameter
+# ex: last_file vim
+function last_file
+{
+    ${1?"Need to specify application"}
+    $1 `ls -tr | tail -1`
+}
+
+function last_filename_containing
+{
+    ${1?"must include a pattern and an optional index"}
+    if [ $2 ]
+    then
+        result_index=$2
+    else
+        result_index=1
+    fi
+    pattern=$1
+    filename=$(ls -tr *$pattern* | tail -$result_index | head -1);
+    echo $filename
+}
+
+function last_file_containing
+{
+    if [ ! $1 ]
+    then
+        echo "last_file_matching 'regex pattern' [result index (2 = second to last)]"
+        echo "ex: \"last_file_matching '<regex_pattern>' 2\" returns the name of the second-to-last modified file with this pattern"
+        echo "ex: \"last_file_matching '<regex_pattern>' \" returns the last-modified file matching this pattern"
+        return
+    fi
+    filelist=$(ls -tr | tail -10)
+    results=$(grep -sl $pattern $filelist)
+    #echo results=$results
+    if [ "$results" ]
+    then
+      if [ $2 ]
+      then
+          result_index=$2;
+      else
+          result_index=1;
+      fi
+      filename=$(ls -tr -1 $results | tail -$result_index | head -1);
+      echo $filename
+    fi
+}
+
+alias last_fnc='last_filename_containing'
+alias last_fc='last_file_containing'

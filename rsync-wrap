@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# use -n (--dry-run) to "perform a trial run with no changes made"
+# --delete - delete extraneous files from dest dirs
+# -a (--archive)
+# -v (--verbose)
+# -h (--human-readable)
+# -C (--cvs-exclude) - "auto-ignore files in the same way CVS does"
+# -u (--update)  = skip files that are newer on the receiver
+# -z (--compress)
+# -i, --itemize-changes
+# -b = backup (same dir, suffix = ~)
+# -m (--prune-empty-dirs)
+# -H, --hard-links - preserve hard links   
+# --size-only - ignore time-stamp comparison
+# --existing - don't create new files on the receiver
+# --ignore-existing - new files only
+# Combine the two above to not update any files (ex: only to delete extraneous files)
+# --partial - keep partially transferred files
+# --progress - display transfer rate
+# --stats - display statistics
+# -P - implies --partial --progress
+# --partial-dir=.rsync-partial - use this directory for storing partial files
+# --log-file=~/sync_log.txt
+
+if [ ! $2 ]
+then
+    echo "Need to specify a source and destination paths";
+    exit;
+fi
+set -x
+#rsync -avChum 
+rsync --archive --verbose --cvs-exclude --exclude='.*.git/' \
+    --ignore-missing-args --human-readable --update \
+    --prune-empty-dirs --progress --exclude='*.sw*p'  \
+    "$1" "$2" $3 $4
+set +x
+
+# For backups, use something similar to this:
+# rsync --archive --one-file-system --hard-links \
+#  --human-readable --inplace --numeric-ids --delete \
+#    --delete-excluded --exclude-from=excludes.txt \
+#      --link-dest=/backup/rsync/asylum/_home_asylum.2005-07-25.15-32-42 \
+#        asylum:/home/asylum/ /backup/rsync/asylum/_home_asylum.incomplete/

@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# Beep for x seconds if speaker-test exists, else countdown
+function signal_stop 
+{
+    num_secs=1
+    cmd="speaker-test -t sine -f 1000"
+    command -v speaker-test >/dev/null \
+    && (($cmd >/dev/null)& pid=$! ; sleep $num_secs ; disown $pid; kill -9 $pid) \
+    || countdown $num_secs
+}
+
+function exec_circuits 
+{
+    secs_warmup=$1 ; shift
+    secs_per_ex=$1 ; shift
+    secs_transition=$1 ; shift
+    secs_break=$1 ; shift
+    num_rounds=$1 ; shift
+    exercises=$@
+        
+    command -v countdown >/dev/null || { echo "Missing the 'countdown' executable in path."; exit 1; }
+
+    echo "Starting"
+    countdown $secs_warmup
+    echo
+    for ((i=1 ; i <= $num_rounds; i++)) ; do
+        echo -e "======== Round $i =========\n"
+        for ex in "${exercises[@]}" ; do 
+            echo "Prepare for $ex:"
+            countdown $secs_transition
+            echo "Go..."
+            countdown $secs_per_ex
+            signal_stop
+        done
+        echo break 
+        countdown $secs_break
+        echo
+    done
+}
+
+printhelp() {
+	echo -e "Usage:"
+	echo -e "\t$0 [options] [\"exercise 1\" \"exercise 2\" ...]"
+	echo
+	echo -e "Available options:"
+	echo -e "\t-h Show help"
+	echo -e "\t-w <arg>\twarmup length (s)"
+	echo -e "\t-d <arg>\texercise duration (s)"
+	echo -e "\t-t <arg>\ttransition length (s)"
+	echo -e "\t-b <arg>\tbreak length (s)"
+	echo -e "\t-n <arg>\tNumber of rounds"
+	echo
+}
+
+# Default circuit
+exercises=("Bicicle kicks" "Pushups" "Mountain climbers" \
+    "Squat boxing jumps" "Burpees" "Boxing hops")
+secs_warmup=10
+secs_per_ex=15
+secs_transition=1
+secs_break=30
+num_rounds=6
+
+while getopts :hw:d:t:b:n:: opt ; do
+	case "$opt" in
+		h) printhelp; exit 0;;
+		w) secs_warmup="$OPTARG";;
+		d) secs_per_ex="$OPTARG";;
+		t) secs_transition="$OPTARG";;
+		b) secs_break="$OPTARG";;
+		n) num_rounds="$OPTARG";;
+		*) echo -e "Unknown option(s)."; printhelp; exit 1;;
+	esac
+done
+shift $(expr $OPTIND - 1 )
+
+if (($# > 1)); then 
+    exercises=("$@")
+fi
+
+exec_circuits $secs_warmup $secs_per_ex $secs_transition $secs_break $num_rounds "$exercises"
+

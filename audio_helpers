@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+function audio_durations
+{
+    ${1?"Need to specify a file containing a list of audio files"}
+    file=$1;
+    cat $file |
+    (
+    while read audio_file
+    do
+        echo -n $audio_file\;;
+        duration=$(soxi -D $audio_file);
+        echo $duration;
+    done
+    )
+}
+
+function check_for_audios
+{
+    (($# < 4)) && echo "Need to specify a <file with list of audios> and <root directory>" && return
+    dir=$2;
+    filelist=$(cat $1)
+    for audio in $filelist ; do grep -r $audio $dir || echo $audio "not matched" ; done | grep 'not matched'
+}
+
+function wav2tts
+{
+    if [ ! $1 ]
+    then
+        echo "Need to specify wav/tts file";
+        echo "Each line of the file should contain:";
+        echo " <filename (w/out .wav)>|<tts text (w/out quotes)>";
+        return;
+    fi
+    file=$1;
+    cat $file |
+    (
+    while read line
+    do
+        wavfile=$(echo $line | sed -n 's/\(.*\)|\(.*\)/\1/p');
+        tts_text=$(echo $line | sed -n 's/\(.*\)|\(.*\)/\2/p');
+        echo Generating $wavfile.wav
+        #echo $tts_text
+        cmd="pico2wave --wave=$wavfile.wav '$tts_text'";
+        #echo $cmd
+        eval $cmd
+    done
+    )
+}
+

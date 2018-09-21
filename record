@@ -1,0 +1,40 @@
+#!/bin/bash
+
+helptext="Enter option:\n\
+        -h for general help,\n\
+        -a record audio,\n
+        -s record screencast,\n
+        -v record video"
+
+[ -z $1 ] && echo -e $helptext && exit 0
+cmd="ffmpeg -hide_banner -y"
+audioparams="-f alsa -i default -c:a libmp3lame -ab 224K -ac 2"
+
+while getopts "hasv" o; do 
+    case "${o}" in
+        h) echo -e $helptext; exit 0;;
+        a) ext="mp3" && prefix="audio"; 
+           cmd="$cmd $audioparams";;
+        s) ext="mkv" && prefix="screencast"; 
+           cmd="$cmd -f x11grab \
+                -s $(xdpyinfo | grep dimensions | awk '{print $2;}') \
+                -i :0.0 \
+                -r 30 \
+                -c:v h264 $audioparams";;
+        v) ext="mkv" && prefix="video"; 
+           cmd="$cmd -i /dev/video0 -c:v h264 -r 30 $audioparams";;
+        *) echo -e $helptext; exit 0;;
+    esac 
+done
+
+# Picks a file name for the output file based on availability:
+while [[ -f $HOME/$prefix$n.$ext ]]
+do
+	n=$((n+1))
+done
+filename="$HOME/$prefix$n.$ext"
+
+cmd="$cmd $filename"
+
+$cmd >/dev/null &
+notify-send -t 5000 "Recording $prefix"

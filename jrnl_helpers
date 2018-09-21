@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+TIME_TRACK_TAG="@time-track"
+TIME_TRACK_JOURNAL=""
+[ -f ~/.jrnl_helpers.rc ] && . ~/.jrnl_helpers.rc
+
+function log_topic
+{
+    (($# < 1)) && echo "Provide topic" && return
+    (echo $1. && while read; do echo $REPLY; done) | jrnl
+}
+
+function jrnl_time_start
+{
+    $(jrnl $TIME_TRACK_JOURNAL $TIME_TRACK_TAG -n 1 --short | grep -q '@.*start') &&\
+        echo "Time already running" && return
+    if [[ $1 ]] ; then
+        tag=$1
+    else
+        options=$(jrnl --tags $TIME_TRACK_JOURNAL $TIME_TRACK_TAG | grep -v $TIME_TRACK_TAG | awk '{print $1}')
+        tag=$(echo -e "$options" | dmenu -i -p "Select or type a new task preceded with @")
+    fi
+    [ -z "$tag" ] && echo "Aborted" && return
+    jrnl $TIME_TRACK_JOURNAL $TIME_TRACK_TAG $tag start
+    echo "Tracking time for $TIME_TRACK_TAG $tag"
+    notify-send -t 5000 "Tracking time for $TIME_TRACK_TAG $tag"
+}
+
+function jrnl_time_end
+{
+    output=$(jrnl $TIME_TRACK_JOURNAL $TIME_TRACK_TAG -n 1 --short | grep '@.*start')
+    [ -z "$output" ] && echo "No time currently tracked" && return
+    relevant_tags=$(jrnl --tags $TIME_TRACK_JOURNAL $TIME_TRACK_TAG -n 1 | awk '{print $1}' | xargs echo)
+    jrnl $TIME_TRACK_JOURNAL $relevant_tags end
+    echo "End time for $relevant_tags"
+    notify-send -t 5000 "End time for $relevant_tags"
+}
+
+function jrnl_report_time
+{
+    (($# < 1)) && echo -e "Can pass additional *conjunctive* jrnl parameters. Ex: \"-to/-from DATE\", or specific tag.\n"
+    output=$(jrnl --tags -and $TIME_TRACK_JOURNAL $* $TIME_TRACK_TAG)
+    grep -q 'No tags found' <<< $output && \
+        echo "No relevant time-tracking tags found" && return
+    awk '{print $1}' <<< $output |\
+    while read -r tag ; do
+        printf '%20s: ' "$tag";
+        jrnl -and $TIME_TRACK_JOURNAL $* $TIME_TRACK_TAG $tag --short |\
+        dateutils.dgrep '>2018-01-01' -o |\
+        while read -r start_time && read -r end_time ; do 
+            dateutils.ddiff -f "%Hh%Mm" "$start_time" "$end_time" 
+        done |\
+        xargs dateutils.dadd '2018-01-00 00:00' -f "%dd %Hh %Mm"
+    done
+}
+
+# Imports file into jrnl with the respective last-modification date
+function jrnl_entry_import 
+{
+    (($# < 1)) && echo "Provide a filename to import" && return
+    (date -r $1 '+%Y-%m-%d %H:%M: ' && cat "$1") | jrnl
+
+}
+
+# The stdout isn't immediately visible with each selected <ctrl>+<enter> tag as the entire output is piped to echo
+alias jrnl_select_tags="jrnl --tags | awk '{print \$1}' | dmenu | xargs echo"
+
+alias jrnl_today_edit="jrnl -on today --edit"
+alias jrnl_list_todos="jrnl @todo --short"
+alias jrnl_list_daily="jrnl -and @daily @todo"

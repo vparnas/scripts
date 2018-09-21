@@ -1,0 +1,16 @@
+#!/bin/bash
+
+case "$1" in
+	"on") cmus-remote -Q || cmus ;;
+	"off") killall cmus ;;
+	"up") amixer -q -c 1 -- sset Master playback 2dB+ ;;
+	"down") amixer -q -c 1 -- sset Master playback 2dB- ;;
+	"mute") amixer -D pulse set Master 1+ toggle ;;
+	"toggle") ;;
+	"pause") cmus-remote --pause ;;
+	"forward") ;;
+	"back") ;;
+	"next") cmus-remote --next ;;
+	"prev") cmus-remote --prev ;;
+	"replay") cmus-remote -k 00:00:00 ;;
+esac
