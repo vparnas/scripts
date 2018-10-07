@@ -30,19 +30,21 @@ while getopts "hb:asv" o; do
     esac 
 done
 
+fileprefix="$HOME/$fileprefix"
+
 shift $(expr $OPTIND - 1 )
 if (($# > 0)); then 
     fileprefix=$1
 fi
 
 # Pick a numerically available file prefix
-while [[ -f $HOME/$fileprefix$n.$ext ]]
+while [[ -f $fileprefix$n.$ext ]]
 do
 	n=$((n+1))
 done
-filename="$HOME/$fileprefix""$n.$ext"
+filename="$fileprefix""$n.$ext"
 
 cmd="$cmd $filename"
 
 $cmd >/dev/null &
-notify-send -t 5000 "Recording $fileprefix"
+notify-send -t 5000 "Recording $filename"
