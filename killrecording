@@ -1,0 +1,5 @@
+#!/bin/bash
+killall -s 15 ffmpeg # softly terminate the recording with SIGTERM
+sleep 3
+killall -s 9 ffmpeg # ffmpeg still runs, and now at 100% CPU, so send SIGKILL
+notify-send -t 5000 "Killed recording"

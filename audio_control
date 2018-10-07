@@ -1,16 +1,20 @@
 #!/bin/bash
 
+spotify="dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
+
 case "$1" in
 	"on") cmus-remote -Q || cmus ;;
 	"off") killall cmus ;;
 	"up") amixer -q -c 1 -- sset Master playback 2dB+ ;;
 	"down") amixer -q -c 1 -- sset Master playback 2dB- ;;
 	"mute") amixer -D pulse set Master 1+ toggle ;;
-	"toggle") ;;
 	"pause") cmus-remote --pause ;;
 	"forward") ;;
 	"back") ;;
 	"next") cmus-remote --next ;;
 	"prev") cmus-remote --prev ;;
 	"replay") cmus-remote -k 00:00:00 ;;
+	"spotify_play") $spotify"PlayPause" >/dev/null ;;
+	"spotify_next") $spotify"Next" >/dev/null ;;
+	"spotify_prev") $spotify"Previous" >/dev/null ;;
 esac

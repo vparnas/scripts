@@ -1,40 +1,48 @@
 #!/bin/bash
 
-helptext="Enter option:\n\
-        -h for general help,\n\
+audio_bitrate="224K"
+helptext="Enter option:\n
+        -h for general help,\n
+        -b <audio bitrate> ($audio_bitrate by default, must precede other options),\n
         -a record audio,\n
         -s record screencast,\n
         -v record video"
 
 [ -z $1 ] && echo -e $helptext && exit 0
-cmd="ffmpeg -hide_banner -y"
-audioparams="-f alsa -i default -c:a libmp3lame -ab 224K -ac 2"
+cmd="ffmpeg -loglevel warning -hide_banner -y"
+audioparams="-f alsa -i default -c:a libmp3lame -ac 2"
 
-while getopts "hasv" o; do 
+while getopts "hb:asv" o; do 
     case "${o}" in
         h) echo -e $helptext; exit 0;;
-        a) ext="mp3" && prefix="audio"; 
-           cmd="$cmd $audioparams";;
-        s) ext="mkv" && prefix="screencast"; 
+        b) audio_bitrate="$OPTARG";; 
+        a) ext="mp3" && fileprefix="audio"; 
+           cmd="$cmd $audioparams -ab $audio_bitrate";;
+        s) ext="mkv" && fileprefix="screencast"; 
            cmd="$cmd -f x11grab \
                 -s $(xdpyinfo | grep dimensions | awk '{print $2;}') \
                 -i :0.0 \
                 -r 30 \
-                -c:v h264 $audioparams";;
-        v) ext="mkv" && prefix="video"; 
-           cmd="$cmd -i /dev/video0 -c:v h264 -r 30 $audioparams";;
+                -c:v h264 $audioparams -ab $audio_bitrate";;
+        v) ext="mkv" && fileprefix="video"; 
+           cmd="$cmd -i /dev/video0 -c:v h264 -r 30 $audioparams -ab $audio_bitrate";;
         *) echo -e $helptext; exit 0;;
     esac 
 done
 
-# Picks a file name for the output file based on availability:
-while [[ -f $HOME/$prefix$n.$ext ]]
+shift $(expr $OPTIND - 1 )
+if (($# > 0)); then 
+    fileprefix=$1
+fi
+
+# Pick a numerically available file prefix
+while [[ -f $HOME/$fileprefix$n.$ext ]]
 do
 	n=$((n+1))
 done
-filename="$HOME/$prefix$n.$ext"
+filename="$HOME/$fileprefix""$n.$ext"
 
 cmd="$cmd $filename"
 
 $cmd >/dev/null &
-notify-send -t 5000 "Recording $prefix"
+notify-send -t 5000 "Recording $fileprefix"
