@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-TIME_TRACK_TAG="@time-track"
+# parent tag included for all time-tracking entries
+TIME_TRACK_TAG="@time-track" 
+
+# If non-blank, use this journal for all time-tracking, instead of the default
 TIME_TRACK_JOURNAL=""
+
+# If exists, reads the above configuration from the external config
 [ -f ~/.jrnl_helpers.rc ] && . ~/.jrnl_helpers.rc
 
 function log_topic
@@ -22,8 +27,9 @@ function jrnl_time_start
     fi
     [ -z "$tag" ] && echo "Aborted" && return
     jrnl $TIME_TRACK_JOURNAL $TIME_TRACK_TAG $tag start
-    echo "Tracking time for $TIME_TRACK_TAG $tag"
-    notify-send -t 5000 "Tracking time for $TIME_TRACK_TAG $tag"
+    msg="Tracking time for $TIME_TRACK_TAG $tag"
+    echo "$msg"
+    notify-send -t 5000 "$msg"
 }
 
 function jrnl_time_end
@@ -32,8 +38,9 @@ function jrnl_time_end
     [ -z "$output" ] && echo "No time currently tracked" && return
     relevant_tags=$(jrnl --tags $TIME_TRACK_JOURNAL $TIME_TRACK_TAG -n 1 | awk '{print $1}' | xargs echo)
     jrnl $TIME_TRACK_JOURNAL $relevant_tags end
-    echo "End time for $relevant_tags"
-    notify-send -t 5000 "End time for $relevant_tags"
+    msg="End time for $relevant_tags"
+    echo "$msg"
+    notify-send -t 5000 "$msg"
 }
 
 function jrnl_report_time
