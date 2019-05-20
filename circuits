@@ -21,7 +21,7 @@ function exec_circuits
         
     command -v countdown >/dev/null || { echo "Missing the 'countdown' executable in path."; exit 1; }
 
-    echo "Starting"
+    echo "Warm-up"
     countdown $secs_warmup
     echo
     for ((i=1 ; i <= $num_rounds; i++)) ; do
