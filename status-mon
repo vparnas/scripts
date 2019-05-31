@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cpu_prc=$(ps axch -o cmd:15,%cpu --sort=-%cpu | head -1 | awk '{print $2}')
+cpu_temp=$(acpi -t | awk '{print $4}')
+mem_free=$(free -h | awk '/^Mem/ {print $7}')
+wifi_stat=$(cat /sys/class/net/w*/operstate)
+wifi_prc=$(grep "^\s*w" /proc/net/wireless | awk '{ print int($3 * 100 / 70) }')
+echo \
+    $(printf "CPU: %-4s%%, %sC, " $cpu_prc $cpu_temp) \
+    $(printf "Mem: %s, " $mem_free) \
+    $(printf "Wifi: %s %03d%%" $wifi_stat $wifi_prc)
+
