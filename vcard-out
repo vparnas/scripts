@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# $1 = a regex to match one or more vcards against any text, case SENSITIVE. Include empty string "" for ALL records
+# Optional, $2: a regex to extract one or more fields, case INSENSITIVE
+# ex: vcard-out "Vitaly" "email\|tel"
+
+contacts=~/Documents/contacts.vcf
+ret=$(awk 'BEGIN { RS = "END:VCARD" } /'$1'/' $contacts)
+
+if [ "$2" ]; then
+	ret=$(echo "$ret" | egrep -i "$2" | awk --field-separator ':' '{print $2}')
+fi;
+
+echo "$ret"

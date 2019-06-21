@@ -1,6 +1,11 @@
 #!/bin/sh
 
-# Displays the links visible in STDIN in dmenu to open in $BROWSER
+# Displays the links visible in STDIN in dmenu and either opens with $1 or copies to clipboard
 regex='(((http|https|ftp|gopher)|mailto)[.:][^ >"\t]*|www\.[-a-z0-9.]+)[^ .,;\t>">\):]'
 url=$(grep -Po "$regex" | dmenu -l 5 -p "Go:") || exit
-$BROWSER "$url"
+app="$1"
+if [ -z $app ]; then
+    echo $url | xsel -b
+else
+	$app "$url"
+fi

@@ -1,5 +1,11 @@
 #!/bin/sh
 
+show_all=false
+
+while getopts "A" o; do case "${o}" in
+    A) show_all=true;; 
+esac done
+
 cpu_prc=$(ps axch -o cmd:15,%cpu --sort=-%cpu | head -1 | awk '{print $2}')
 cpu_temp=$(acpi -t | awk '{print $4}')
 mem_free=$(free -h | awk '/^Mem/ {print $7}')
@@ -10,3 +16,8 @@ echo \
     $(printf "Mem: %s, " $mem_free) \
     $(printf "Wifi: %s %03d%%" $wifi_stat $wifi_prc)
 
+if ( $show_all ); then
+    acpi -b # battery
+    [ -f ~/cmus-status.txt ] && cat ~/cmus-status.txt # current song playing
+    ps axch -o cmd:15,%cpu --sort=-%cpu | head -5
+fi;
