@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Strips out just the table from the html document
+# Removes any html inner comments
+# Converts to CSV, assuming first row to be header row
+# Wraps each field in double quotes 
+# Removes double quotes in header line (in the sed '1 s/"//g' statement)
+# Removes any formatting markup from header line
+
+sed -n "/<table/,/<\/table/p" |\
+sed -e "s/.*\(<table\)/\1/; s/\(<\/table>\).*/\1/;" |\
+sed -e 's/<!--.*-->//g; s/^[[:space:]]*//g; s/[[:space:]]*$//g' |\
+tr -d '\n' |\
+sed 's/<\/\(TR\|THEAD\|TBODY\)[^>]*>/\n/Ig' |\
+sed 's/<\/\?\(TABLE\|TR\|THEAD\|TBODY\)[^>]*>//Ig' |\
+sed "s/\"/'/g" |\
+sed 's/^<T[DH][^>]*>\|<\/\?T[DH][^>]*>$/"/Ig' |\
+sed 's/<\/T[DH][^>]*><T[DH][^>]*>/","/Ig' |\
+sed '/^[[:space:]]*$/d' |\
+sed -e '1 s/"//g; 1 s/<\/\?[^>]*>//g'
