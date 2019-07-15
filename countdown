@@ -9,9 +9,9 @@ t=$1 remaining=$1
 SECONDS=0
 
 while sleep .2; do
-    printf '\r%3d seconds remaining' "$remaining"
+    printf '\r%3d' "$remaining"
     if (( (remaining=t-SECONDS) <= 0 )); then
-        printf '\r%3d seconds remaining\n' 0
+        printf '\r%3d\n' 0
         #zenity --info --timeout=300 --ok-label "Take a break" --title "Time Out" --text "$1 seconds are up" >/dev/null 2>&1
         break
     fi
