@@ -53,11 +53,11 @@ function jrnl_report_time
     while read -r tag ; do
         printf '%20s: ' "$tag";
         jrnl -and $TIME_TRACK_JOURNAL $* $TIME_TRACK_TAG $tag --short |\
-        dateutils.dgrep '>2018-01-01' -o |\
+        dategrep '>2018-01-01' -o |\
         while read -r start_time && read -r end_time ; do 
-            dateutils.ddiff -f "%Hh%Mm" "$start_time" "$end_time" 
+            datediff -f "%Hh%Mm" "$start_time" "$end_time" 
         done |\
-        xargs dateutils.dadd '2018-01-00 00:00' -f "%dd %Hh %Mm"
+        xargs dateadd '2018-01-00 00:00' -f "%dd %Hh %Mm"
     done
 }
 

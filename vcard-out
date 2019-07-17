@@ -8,7 +8,7 @@ contacts=~/Documents/contacts.vcf
 ret=$(awk 'BEGIN { RS = "END:VCARD" } /'$1'/' $contacts)
 
 if [ "$2" ]; then
-	ret=$(echo "$ret" | egrep -i "$2" | awk --field-separator ':' '{print $2}')
+	ret=$(echo "$ret" | egrep -i "$2" | awk -F ':' '{print $2}')
 fi;
 
 echo "$ret"
