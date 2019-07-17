@@ -8,12 +8,12 @@ fi;
 t=$1 remaining=$1
 SECONDS=0
 
+tput civis # hide cursor
 while sleep .2; do
-    printf '\r%3d' "$remaining"
+    printf '\r%3d\r' "$remaining"
     if (( (remaining=t-SECONDS) <= 0 )); then
-        printf '\r%3d\n' 0
-        #zenity --info --timeout=300 --ok-label "Take a break" --title "Time Out" --text "$1 seconds are up" >/dev/null 2>&1
         break
     fi
 done
+tput cnorm # show cursor
 

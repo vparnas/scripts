@@ -15,6 +15,6 @@ sed 's/<\/\(TR\|THEAD\|TBODY\)[^>]*>/\n/Ig' |\
 sed 's/<\/\?\(TABLE\|TR\|THEAD\|TBODY\)[^>]*>//Ig' |\
 sed "s/\"/'/g" |\
 sed 's/^<T[DH][^>]*>\|<\/\?T[DH][^>]*>$/"/Ig' |\
-sed 's/<\/T[DH][^>]*><T[DH][^>]*>/","/Ig' |\
+sed 's/[[:space:]]*<\/T[DH][^>]*><T[DH][^>]*>/","/Ig' |\
 sed '/^[[:space:]]*$/d' |\
 sed -e '1 s/"//g; 1 s/<\/\?[^>]*>//g'
