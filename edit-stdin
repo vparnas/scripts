@@ -2,8 +2,7 @@
 
 # Opens the STDIN content in an editable temporary buffer in $EDITOR
 
-[ -z $TMPDIR ] && TMPDIR="/tmp"
-tmpfile=$(mktemp $TMPDIR/st-edit.XXXXXX)
+tmpfile=$(mktemp --tmpdir st-edit.XXXXXX)
 cat > "$tmpfile"
 
 if [ "$DISPLAY" ]; then

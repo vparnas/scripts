@@ -2,8 +2,7 @@
 # Receive via stdin (from st, tmux) the console output,
 # prompt for a recent command and copy the results,
 [ "$DISPLAY" ] && menuapp="dmenu" || menuapp="slmenu"
-[ -z $TMPDIR ] && TMPDIR="/tmp"
-tmpfile=$(mktemp $TMPDIR/st-cmd-output.XXXXXX)
+tmpfile=$(mktemp --tmpdir st-cmd-output.XXXXXX)
 trap 'rm "$tmpfile"' 0 1 15
 sed -n "w $tmpfile"
 #ps1="(.*)\s[~/].*\\$\s" # The regex representing the ps1 command line prompt
