@@ -2,7 +2,12 @@
 
 # Opens the STDIN content in an editable temporary buffer in $EDITOR
 
-tmpfile=$(mktemp /tmp/st-edit.XXXXXX)
-trap  'rm "$tmpfile"' 0 1 15
+[ -z $TMPDIR ] && TMPDIR="/tmp"
+tmpfile=$(mktemp $TMPDIR/st-edit.XXXXXX)
 cat > "$tmpfile"
-st -e "$EDITOR" "$tmpfile"
+
+if [ "$DISPLAY" ]; then
+    st -e $EDITOR $tmpfile && rm $tmpfile
+else
+    tmux new-window "$EDITOR $tmpfile; rm $tmpfile"
+fi
