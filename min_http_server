@@ -15,30 +15,36 @@ while true ; do
         echo $line
         #if echo "$line" | grep -qE '^GET /'  # if line starts with "GET /"
         if [[ "$line" =~ ^(GET|POST) ]] ; then
-            REQUEST_METHOD=$(echo "$line" | cut -d ' ' -f1)
-            REQUEST=$(echo "$line" | cut -d ' ' -f2) # extract the request
+            REQUEST_METHOD=$(cut -d ' ' -f1 <<< "$line")
+            REQUEST=$(cut -d ' ' -f2 <<< "$line") # extract the request
+            QUERY_STRING=$(cut -d '?' -f2 <<< "$REQUEST")
+            if [[ -n "$QUERY_STRING" ]]; then
+                REQUEST=$(cut -d '?' -f1 <<< "$REQUEST")
+            fi
             echo Request: $REQUEST
         elif [ -z "$line" ] # empty line / end of request
         then
             if [[ "$REQUEST_METHOD" == "POST" ]]; then
                 read -r QUERY_STRING_POST
-                echo QUERY_STRING_POST: $QUERY_STRING_POST
+                echo $QUERY_STRING_POST
             fi
+            [[ -n "$QUERY_STRING" ]] && echo "$QUERY_STRING"
             # call a script here
             # Note: REQUEST is exported, so the script can parse it (to answer 200/403/404 status code + content)
             if [[ "$REQUEST" == "/" ]]; then
                 REQUEST="$DEFAULT_DOCUMENT"
             elif [[ "$REQUEST" =~ cgi$ ]]; then
-                # TODO: resp received as one line without newlines
-                resp=$(./"$REQUEST")
-                if [[ "$resp" =~ Location ]] ; then
-                    echo Location redirect request
-                    REQUEST=$(echo "$resp" | grep -io 'Location:\s.*$' | cut -d ' ' -f2)
-                else
-                    echo Outputting the CGI script response.
-                    echo -e $resp > out
-                    continue
-                fi
+                echo -e "\nCGI Response:\n"
+                ./"$REQUEST" | tee out
+                continue
+                #while read -r resp; do
+                #    echo $resp > out
+                #    if [[ "$resp" =~ ^Location ]] ; then
+                #        echo Location redirect request
+                #        continue
+                #        #REQUEST=$(echo "$resp" |  cut -d ' ' -f2)
+                #    fi
+                #done <<< $(./"$REQUEST")
             fi
             echo -e "HTTP/1.1 200 OK\nContent-type: text/html\n\n$(cat ./$REQUEST)" > out
         elif [[ "$REQUEST_METHOD" == "POST" ]]; then
