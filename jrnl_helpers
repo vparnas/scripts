@@ -69,6 +69,13 @@ function jrnl_entry_import
 
 }
 
+function jrnl_search_entry
+{
+    (($# < 1)) && echo "Provide search pattern" && return
+    pattern=$1
+    sed -nr "/^[0-9]{4}-[0-9]{2}-[0-9]{2}/{x;/$pattern/p;d}; {H;d}" ~/journals/journal.txt
+}
+
 # The stdout isn't immediately visible with each selected <ctrl>+<enter> tag as the entire output is piped to echo
 alias jrnl_select_tags="jrnl --tags | awk '{print \$1}' | dmenu | xargs echo"
 
