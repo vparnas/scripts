@@ -2,7 +2,7 @@
 
 # Opens the STDIN content in an editable temporary buffer in $EDITOR
 
-tmpfile=$(mktemp --tmpdir st-edit.XXXXXX)
+tmpfile=$(mktemp --tmpdir stdin-edit.XXXXXX)
 cat > "$tmpfile"
 
 if [ "$DISPLAY" ]; then

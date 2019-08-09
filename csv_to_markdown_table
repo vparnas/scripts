@@ -1,4 +1,4 @@
 #!/bin/sh
 
-sed -e '1p; 1s/[^,]\+/:---:/g;' | sed -e 's/,/ | /g; s/^.*$/| \0 |/g' # convert CSV data to markup table
+sed '1p; 1s/[^,]\+/:---:/g; s/,/ | /g; s/^.*$/| \0 |/g'
 
