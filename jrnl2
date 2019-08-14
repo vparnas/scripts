@@ -2,11 +2,14 @@
 
 # parent tag included for all time-tracking entries
 TIME_TRACK_TAG="@time-track" 
-
 # If non-blank, use this journal for all time-tracking, instead of the default
 TIME_TRACK_JOURNAL=""
-
 MAIN_JOURNAL="$HOME/journals/journal.txt"
+
+# Default command-line options and such
+COMMANDS=()
+OPTIONS=()
+declare -A ARGS=()
 
 # If exists, reads the above configuration from the external config
 [ -f ~/.jrnl_helpers.rc ] && . ~/.jrnl_helpers.rc
@@ -73,20 +76,28 @@ function jrnl_entry_import
 
 function jrnl_entry_search
 {
-    (($# < 1)) && echo "Provide search pattern" && return
     pattern=$1
+    [[ "${OPTIONS[*]}" =~ short ]] && instr='P' || instr='p'
     # TODO: handle last line of file
-    sed -nr "/^[0-9]{4}-[0-9]{2}-[0-9]{2}/{x;/$pattern/p;d}; {H;d}" "$MAIN_JOURNAL"
+    sed -nr "/^[0-9]{4}-[0-9]{2}-[0-9]{2}/{x;/$pattern/$instr;d}; {H;d}" "$MAIN_JOURNAL"
 }
 
+# Adds entry in preference of
+# 1. stdin
+# 2. argument
+# 3. Edited in $EDITOR
 function jrnl_entry_add
 {
     filter='1s/\.\s\+/.\n/'
     read -rt .01 input
     if [[ "$input" ]] ; then
         entry=$(sed "$filter" <<< $input)
+    elif [[ -n $1 ]]; then
+        entry=$(sed "$filter" <<< "${@:1}")
     else
         # TODO: how to wait for $EDITOR to truly exit?
+        # TODO: disregard empty file
+        # TODO: Return status upon entry termination
         tmpfile=$(mktemp --tmpdir jrnl-edit.XXXXXX)
         trap 'rm "$tmpfile"' 0 1 15
         $EDITOR $tmpfile
@@ -96,12 +107,59 @@ function jrnl_entry_add
     echo -e "\n$(date '+%Y-%m-%d %H:%M') $entry" >> "$MAIN_JOURNAL"
 }
 
-# Sorted and counted list of tags via native unix utilities
-alias jrnl_list_tags="grep -o '@\w\+' $MAIN_JOURNAL | sort | uniq -ci | sort -nr"
+#
+## The stdout isn't immediately visible with each selected <ctrl>+<enter> tag as the entire output is piped to echo
+#alias jrnl_select_tags="jrnl --tags | awk '{print \$1}' | dmenu | xargs echo"
+#
+#alias jrnl_today_edit="jrnl -on today --edit"
+#alias jrnl_list_todos="jrnl @todo --short"
+#alias jrnl_list_daily="jrnl -and @daily @todo"
 
-# The stdout isn't immediately visible with each selected <ctrl>+<enter> tag as the entire output is piped to echo
-alias jrnl_select_tags="jrnl --tags | awk '{print \$1}' | dmenu | xargs echo"
+function usage {
+  cat <<EOF  
+Need to provide a command or alias.
+        -h|--help: help text,
+        -n|--max entries <n>: limit query to the last n entries,
+        -s|--search <pattern>: search for records containing <pattern>,
+        -t|--tags: view list of tags
+        --short: view entry headings only
+EOF
+}
 
-alias jrnl_today_edit="jrnl -on today --edit"
-alias jrnl_list_todos="jrnl @todo --short"
-alias jrnl_list_daily="jrnl -and @daily @todo"
+function parseargs() {
+    while [[ -n $1 ]]; do
+        arg_needed=0
+        case $1 in
+            # Switches and configuration
+            -t|--tags) COMMANDS+=('tags');;
+            --short) OPTIONS+=('short');;
+            -s|--search) 
+                arg_needed=1
+                cmd="search"
+                ;;
+            -n|--max_entries) 
+                arg_needed=1
+                cmd="max_entries"
+                ;;
+            -h|--help|-*) COMMANDS+=('help');;
+            *) return;; 
+        esac
+        shift
+        if [[ $arg_needed == 1 ]]; then
+            [[ $# -lt 1 || $1 =~ ^\- ]] && echo "$cmd needs an argument" && exit 128
+            COMMANDS+=("$cmd")
+            ARGS["$cmd"]="$1"
+            shift
+        fi
+    done
+}
+
+parseargs "$@"
+
+[[ ${#COMMANDS} == 0 ]] && jrnl_entry_add "$@" && exit 0
+
+case ${COMMANDS[0]} in
+    search) jrnl_entry_search  "${ARGS['search']}";;
+    tags) grep -o '@\w\+' $MAIN_JOURNAL | sort | uniq -ci | sort -nr;;
+    help) usage;;
+esac
