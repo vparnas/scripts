@@ -1,14 +1,17 @@
-#!/bin/bash
+#!/bin/sh
 
 spotify="dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
+
+[[ -z $ALSA_DEVICE_ID ]] && ALSA_DEVICE_ID=0
 
 case "$1" in
 	"on") cmus-remote -Q || cmus ;;
 	"off") killall cmus ;;
-	"up") amixer -q -c 1 -- sset Master playback 2dB+ ;;
-	"down") amixer -q -c 1 -- sset Master playback 2dB- ;;
+	"up") amixer -q -c $ALSA_DEVICE_ID -- sset Master playback 2dB+ ;;
+	"down") amixer -q -c $ALSA_DEVICE_ID -- sset Master playback 2dB- ;;
 	"mute") amixer -D pulse set Master 1+ toggle ;;
 	"pause") cmus-remote --pause ;;
+	"pause_playback") cmus-remote --pause-playback ;;
 	"forward") cmus-remote --seek +5 ;;
 	"back") cmus-remote --seek -5 ;;
 	"next") cmus-remote --next ;;
