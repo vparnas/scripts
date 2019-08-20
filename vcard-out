@@ -4,11 +4,15 @@
 # Optional, $2: a regex to extract one or more fields, case INSENSITIVE
 # ex: vcard-out "Vitaly" "email|tel"
 
-DEF_CONTACTS="$HOME/Documents/contacts.vcf"
+DEF_CONTACTS="$HOME/contacts.vcf"
+EXCLUDE_PHOTO=true
+
 [[ "$VC_CONTACTS" ]] && contacts="$VC_CONTACTS" || contacts="$DEF_CONTACTS"
 [[ -n $1 ]] && pattern=$1 || pattern="."
 
 ret=$(sed -rn "/BEGIN:VCARD/{x;/$pattern/I{s/END:VCARD/\0\n/;p};d}; \${x;G;/$pattern/Ip}; {H}" "$contacts")
+
+$EXCLUDE_PHOTO && ret=$(sed '/^PHOTO/,/^\s*$/d' <<< "$ret")
 
 [ "$2" ] && ret=$(egrep -i "$2" <<< "$ret" | awk -F ':' '{print $2}')
 
