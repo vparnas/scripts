@@ -1,25 +1,19 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # executes the last file in the directory via the app supplied in the parameter
 # ex: last_file vim
 function last_file
 {
-    ${1?"Need to specify application"}
-    $1 `ls -tr | tail -1`
+    [ -z "$1" ] && echo "Need to specify application" && return
+	eval "$1 `ls -tr | tail -1`"
 }
 
 function last_filename_containing
 {
-    ${1?"must include a pattern and an optional index"}
-    if [ $2 ]
-    then
-        result_index=$2
-    else
-        result_index=1
-    fi
+    [ -z "$1" ] && echo "must include a pattern and an optional index" && return
+    [ -n "$2" ] && result_index=$2 || result_index=1
     pattern=$1
-    filename=$(ls -tr *$pattern* | tail -$result_index | head -1);
-    echo $filename
+    ls -tr *$pattern* | tail -$result_index | head -1
 }
 
 function last_file_containing
