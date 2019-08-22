@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # executes the last file in the directory via the app supplied in the parameter
 # ex: last_file vim
@@ -13,32 +13,24 @@ function last_filename_containing
     [ -z "$1" ] && echo "must include a pattern and an optional index" && return
     [ -n "$2" ] && result_index=$2 || result_index=1
     pattern=$1
-    ls -tr *$pattern* | tail -$result_index | head -1
+    ls -tr *"$pattern"* | tail -$result_index | head -1
 }
 
 function last_file_containing
 {
-    if [ ! $1 ]
+    if [ ! "$1" ]
     then
         echo "last_file_matching 'regex pattern' [result index (2 = second to last)]"
         echo "ex: \"last_file_matching '<regex_pattern>' 2\" returns the name of the second-to-last modified file with this pattern"
         echo "ex: \"last_file_matching '<regex_pattern>' \" returns the last-modified file matching this pattern"
         return
     fi
-    filelist=$(ls -tr | tail -10)
-    results=$(grep -sl $pattern $filelist)
-    #echo results=$results
-    if [ "$results" ]
-    then
-      if [ $2 ]
-      then
-          result_index=$2;
-      else
-          result_index=1;
-      fi
-      filename=$(ls -tr -1 $results | tail -$result_index | head -1);
-      echo $filename
-    fi
+    set -x
+    results=$(ls -tr | tail -20 | xargs grep -li "$1")
+    [ -z "$results" ] && return
+    [ -n "$2" ] && result_index=$2 || result_index=1
+    ls -tr -1 "$results" | tail -$result_index | head -1
+    set +x
 }
 
 alias last_fnc='last_filename_containing'
