@@ -33,5 +33,6 @@ function last_file_containing
     set +x
 }
 
-alias last_fnc='last_filename_containing'
-alias last_fc='last_file_containing'
+alias lf='last_file'
+alias lfnc='last_filename_containing'
+alias lfc='last_file_containing'
