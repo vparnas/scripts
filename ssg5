@@ -43,6 +43,7 @@ main() {
 	# files
 
 	title="$3"
+	base_url="$4"
 
 	h_file="$src/_header.html"
 	f_file="$src/_footer.html"
@@ -68,12 +69,12 @@ main() {
 			if test -x "$(which lowdown 2> /dev/null)"
 			then
 				echo "$fs" | grep '\.md$' |
-				render_md_files_lowdown "$src" "$dst" "$title"
+				render_md_files_lowdown "$src" "$dst" "$title" "$base_url"
 			else
 				if test -x "$(which Markdown.pl 2> /dev/null)"
 				then
 					echo "$fs" | grep '\.md$' |
-					render_md_files_Markdown_pl "$src" "$dst" "$title"
+					render_md_files_Markdown_pl "$src" "$dst" "$title" "$base_url"
 				else
 					echo "couldn't find lowdown nor Markdown.pl"
 					exit 3
@@ -94,7 +95,6 @@ main() {
 
 	# sitemap
 
-	base_url="$4"
 	date=$(date +%Y-%m-%d)
  	urls=$(list_pages "$src")
 
@@ -190,21 +190,22 @@ render_md_files_lowdown() {
 	do
         # Create a separate dir/index.html for each md document except those exclusively named index.md
         if echo "$f" | grep -q 'index\.md'; then
-            dst_file="$2/${f%\.md}.html"
+            dst_file_dir="$2/${f%\index.md}/"
         else
-            dst_file_dir="$2/${f%\.md}"
+            dst_file_dir="$2/${f%\.md}/"
             mkdir -p "$dst_file_dir"
-            dst_file="$dst_file_dir/index.html"
         fi
-        # If a '---' metadata '...' section present convert title to an H1 heading, delete the rest.
-        (sed -r -e '/^---/,/^(---)|(\.\.\.)/'\
-'{/^title/I{s/title:\s*/# /pi}; d}' |\
+        dst_file="$dst_file_dir""index.html"
+        ## If a '---' metadata '...' section present convert title to an H1 heading, delete the rest.
+        # If metadata section starts with a yaml-metadata '---', remove for lowdown compatibility
+        (
+        #sed -r -e '/^---/,/^(---)|(\.\.\.)/{/^title/I{s/title:\s*/# /pi}; d}' |
+        sed '1{/^---/d}' |
         lowdown \
 		-D html-skiphtml \
         -d autolink) < "$1/$f" |
-		render_html_file "$3" \
+		render_html_file "$3" "$4" \
 		> "$dst_file" 
-		#> "$2/${f%\.md}.html" # Write to a corresponding html file
 	done
 }
 
@@ -221,7 +222,7 @@ render_md_files_Markdown_pl() {
 
 render_html_file() {
 	# h/t Devin Teske
-	awk -v title="$1" '
+	awk -v title="$1" -v baseurl="$2" '
 	{ body = body "\n" $0 }
 	END {
 		body = substr(body, 2)
