@@ -194,6 +194,12 @@ check_and_set_page_var() {
 	fi
 }
 
+extract_metadata() {
+	name="$1"
+	input_file="$2"
+	sed -n '1,/^[[:space:]]*$/s/^'"$name"':[[:space:]]*//ip' $input_file
+}
+
 render_md_files_lowdown() {
     sitetitle="$3"
     baseurl="$4"
@@ -203,34 +209,29 @@ render_md_files_lowdown() {
 		echo "file: $f"
         # Create a separate dir/index.html for each md document except those exclusively named index.md
 		echo "$f" | grep -q 'index\.md' \
-			&& page_url="${f%\index.md}" || page_url="${f%\.md}"
-		dst_file_dir="$2/$page_url/"
+			&& page_url="${f%\index.md}/" || page_url="${f%\.md}/"
+		dst_file_dir="$2/$page_url"
 		[ -d "$dist_file_dir" ] || mkdir -p "$dst_file_dir"
         dst_file="$dst_file_dir""index.html"
         input_file="$1/$f"
 
-        content_title=$(sed -n '1,/^[[:space:]]*$/s/^title:[[:space:]]*//ip' $input_file)
-		[ -n "$content_title" ] && pagetitle="$sitetitle &mdash; $content_title" ||
+        content_title=$(extract_metadata "title" "$input_file")
+		[ -n "$content_title" ] && pagetitle="$sitetitle - $content_title" ||
 			pagetitle="$sitetitle"
-        pagedate=$(sed -n '1,/^[[:space:]]*$/s/^date:[[:space:]]*//ip' $input_file)
+        pagedate=$(extract_metadata "date" "$input_file")
 		page_url=$(echo "$page_url" | sed 's#^\.##') # remove leading . in url
-        # TODO: need to escape anything?
-		cat "$HEADER" |
+		(cat "$HEADER" |
 		sed -e 's#\$SITETITLE#'"$sitetitle"'#g' \
 			-e 's#\$PAGETITLE#'"$pagetitle"'#g'\
 			-e 's#\$SITEURL#'"$baseurl"'#g'\
 			-e 's#\$PAGEURL#'"$page_url"'#g' |
 			check_and_set_page_var "CONTENT_TITLE" "$content_title" |
-			check_and_set_page_var "DATE" "$pagedate" \
-			> "$dst_file"
-
-        ## If a '---' metadata '...' section present convert title to an H1 heading, delete the rest.
+			check_and_set_page_var "DATE" "$pagedate"
         # If metadata section starts with a yaml-metadata '---', remove for lowdown compatibility
         sed '1{/^---/d}' "$input_file" | 
-		lowdown -D html-skiphtml -d autolink |
-		render_html_file "$sitetitle" "$baseurl" \
-		>> "$dst_file" 
-		cat "$FOOTER" >> "$dst_file"
+		lowdown -D html-skiphtml -d autolink
+		cat "$FOOTER") |
+		render_html_file "$sitetitle" "$baseurl" > "$dst_file" 
 	done
 }
 
