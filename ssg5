@@ -138,8 +138,8 @@ list_affected_files() {
 check_and_set_page_var() {
 	var=$1
 	value=$2
-	if [ -n "$value" ]; then
-		sed 's#\$'"$var"'#'"$value"'#ig; /#'"$var"'/d'
+	if [ -n "$var" ] && [ -n "$value" ]; then
+		sed 's#\$'"$var"'#'"$value"'#g; /#'"$var"'/d'
 	else
 		sed '/#'"$var"'/,/\/#'"$var"'/d'
 	fi
@@ -171,6 +171,8 @@ render_files() {
 		if [ "$ext" = "md" ]; then
 			content_title=$(extract_metadata "title" "$input_file")
 			pagedate=$(extract_metadata "date" "$input_file")
+			canonical=$(extract_metadata "canonical" "$input_file")
+			mathjax=$(extract_metadata "mathjax" "$input_file")
 		fi
 		[ -n "$content_title" ] &&
 			pagetitle="$site_title - $content_title" ||
@@ -184,7 +186,12 @@ render_files() {
 					-e 's#\$SITEURL#'"$base_url"'#g'\
 					-e 's#\$PAGEURL#'"$page_url"'#g' |
 					check_and_set_page_var "CONTENT_TITLE" "$content_title" |
-					check_and_set_page_var "DATE" "$pagedate"
+					check_and_set_page_var "DATE" "$pagedate" |
+					check_and_set_page_var "FEED_RSS" "$FEED_RSS" |
+					check_and_set_page_var "FEED_ATOM" "$FEED_ATOM" |
+					check_and_set_page_var "CANONICAL" "$canonical" |
+					check_and_set_page_var "MATHJAX" "$mathjax"
+
 			if [ "$ext" = 'md' ]; then
 				if test -x "$(which lowdown 2> /dev/null)"; then
 					# If metadata section starts with a yaml-metadata '---', remove for lowdown compatibility
