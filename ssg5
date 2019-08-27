@@ -17,10 +17,7 @@
 #
 
 main() {
-	test -n "$1" || usage
-	test -n "$2" || usage
-	test -n "$3" || usage
-	test -n "$4" || usage
+	[ -z "$4" ] && usage
  	test -d "$1" || no_dir "$1"
  	test -d "$2" || no_dir "$2"
 
@@ -42,16 +39,13 @@ main() {
 
 	# files
 
-	title="$3"
+	site_title="$3"
 	base_url="$4"
 
-	h_file="$src/_header.html"
-	f_file="$src/_footer.html"
-    [ -z "$HEADER" ] && export HEADER="$h_file"
-    [ -z "$FOOTER" ] && export FOOTER="$f_file"
+    [ -z "$HEADER" ] && export HEADER="$src/_header.html"
+    [ -z "$FOOTER" ] && export FOOTER="$src/_footer.html"
 
-	list_dirs "$src" |
-	(cd "$src" && cpio -pduL "$dst")
+	list_dirs "$src" | (cd "$src" && cpio -pduL "$dst")
 
 	fs=$(
  	if test -f "$dst/.files"
@@ -60,30 +54,28 @@ main() {
 	fi
 	)
 
-	if test -n "$fs"
-	then
+	if test -n "$fs"; then
 		echo "$fs" | tee "$dst/.files"
 
-		if echo "$fs" | grep -q '\.md$'
-		then
-			if test -x "$(which lowdown 2> /dev/null)"
-			then
-				echo "$fs" | grep '\.md$' |
-				render_md_files_lowdown "$src" "$dst" "$title" "$base_url"
-			else
-				if test -x "$(which Markdown.pl 2> /dev/null)"
-				then
-					echo "$fs" | grep '\.md$' |
-					render_md_files_Markdown_pl "$src" "$dst" "$title" "$base_url"
-				else
-					echo "couldn't find lowdown nor Markdown.pl"
-					exit 3
-				fi
-			fi
+		#echo "$fs" | while read -r f; do
+		#	#case $f in
+		#	#	*.md) 
+		#	#esac
+		#done
+
+		# TODO Refactor. Collapse the internal while loops in here.
+		if test -x "$(which lowdown 2> /dev/null)"; then
+			echo "$fs" | grep '\.md$' |
+			render_md_files_lowdown "$src" "$dst" "$site_title" "$base_url"
+		elif test -x "$(which Markdown.pl 2> /dev/null)"; then
+			echo "$fs" | grep '\.md$' |
+			render_md_files_Markdown_pl "$src" "$dst" "$site_title" "$base_url"
+		else
+			echo "couldn't find lowdown nor Markdown.pl"
+			exit 3
 		fi
 
-		echo "$fs" | grep '\.html$' |
-		render_html_files "$src" "$dst" "$title"
+		echo "$fs" | grep '\.html$' | render_html_files "$src" "$dst" "$site_title"
 
 		echo "$fs" | grep -Ev '\.md$|\.html$' |
 		(cd "$src" && cpio -puL "$dst")
@@ -92,9 +84,7 @@ main() {
 	printf '[ssg] ' >&2
 	print_status 'file, ' 'files, ' "$fs" >&2
 
-
 	# sitemap
-
 	date=$(date +%Y-%m-%d)
  	urls=$(list_pages "$src")
 
@@ -120,7 +110,6 @@ readlink_f() {
 	echo "$dir/$file"
 }
 
-
 print_status() {
 	test -z "$3" && printf 'no %s' "$2" && return
 
@@ -131,12 +120,10 @@ print_status() {
 	}'
 }
 
-
 usage() {
 	echo "usage: ${0##*/} src dst title base_url" >&2
 	exit 1
 }
-
 
 no_dir() {
 	echo "${0##*/}: $1: No such directory" >&2
@@ -147,11 +134,9 @@ list_dirs() {
 	cd "$1" && eval "find . -type d ! -name '.' ! -path '*/_*' $IGNORE"
 }
 
-
 list_files() {
 	cd "$1" && eval "find -L . -type f ! -name '.' ! -path '*/_*' $IGNORE"
 }
-
 
 list_dependant_files () {
  	e="\\( -name '*.html' -o -name '*.md' -o -name '*.css' -o -name '*.js' \\)"
@@ -177,7 +162,6 @@ list_affected_files() {
 	fi
 }
 
-
 render_html_files() {
 	while read -r f
 	do render_html_file "$3" < "$1/$f" > "$2/$f"
@@ -201,11 +185,10 @@ extract_metadata() {
 }
 
 render_md_files_lowdown() {
-    sitetitle="$3"
-    baseurl="$4"
+    site_title="$3"
+    base_url="$4"
 
-	while read -r f
-	do
+	while read -r f; do
 		echo "file: $f"
         # Create a separate dir/index.html for each md document except those exclusively named index.md
 		echo "$f" | grep -q 'index\.md' \
@@ -216,22 +199,22 @@ render_md_files_lowdown() {
         input_file="$1/$f"
 
         content_title=$(extract_metadata "title" "$input_file")
-		[ -n "$content_title" ] && pagetitle="$sitetitle - $content_title" ||
-			pagetitle="$sitetitle"
+		[ -n "$content_title" ] && pagetitle="$site_title - $content_title" ||
+			pagetitle="$site_title"
         pagedate=$(extract_metadata "date" "$input_file")
 		page_url=$(echo "$page_url" | sed 's#^\.##') # remove leading . in url
-		(cat "$HEADER" |
-		sed -e 's#\$SITETITLE#'"$sitetitle"'#g' \
+		([ -f "$HEADER" ] && cat "$HEADER" |
+		sed -e 's#\$SITETITLE#'"$site_title"'#g' \
 			-e 's#\$PAGETITLE#'"$pagetitle"'#g'\
-			-e 's#\$SITEURL#'"$baseurl"'#g'\
+			-e 's#\$SITEURL#'"$base_url"'#g'\
 			-e 's#\$PAGEURL#'"$page_url"'#g' |
 			check_and_set_page_var "CONTENT_TITLE" "$content_title" |
 			check_and_set_page_var "DATE" "$pagedate"
         # If metadata section starts with a yaml-metadata '---', remove for lowdown compatibility
         sed '1{/^---/d}' "$input_file" | 
 		lowdown -D html-skiphtml -d autolink
-		cat "$FOOTER") |
-		render_html_file "$sitetitle" "$baseurl" > "$dst_file" 
+		[ -f "$FOOTER" ] && cat "$FOOTER") |
+		render_html_file "$site_title" "$base_url" > "$dst_file" 
 	done
 }
 
@@ -247,20 +230,18 @@ render_md_files_Markdown_pl() {
 
 
 render_html_file() {
-	sitetitle="$1"
-	baseurl="$2"
+	site_title="$1"
+	base_url="$2"
 	# Inject site title if absent, and convert relative links to absolute
-	sed -re 's#(<title>)[[:space:]]*(<\/title>)#\1'"$sitetitle"'\2#i' \
-		-e 's#(href[[:space:]]*=[[:space:]]*")\/#\1'"$baseurl"'\/#ig'
+	sed -re 's#(<title>)[[:space:]]*(<\/title>)#\1'"$site_title"'\2#i' \
+		-e 's#(href[[:space:]]*=[[:space:]]*")\/#\1'"$base_url"'\/#ig'
 }
-
 
 list_pages() {
 	e="\\( -name '*.html' -o -name '*.md' \\)"
 	cd "$1" && eval "find -L . -type f ! -path '*/.*' ! -path '*/_*' $IGNORE $e" |
 	sed 's#^./##;s#.md$#.html#;s#/index.html$#/#'
 }
-
 
 render_sitemap() {
 	urls="$1"
