@@ -47,8 +47,8 @@ main() {
 
 	h_file="$src/_header.html"
 	f_file="$src/_footer.html"
-	test -f "$f_file" && FOOTER=$(cat "$f_file") && export FOOTER
-	test -f "$h_file" && HEADER=$(cat "$h_file") && export HEADER
+    [ -z "$HEADER" ] && export HEADER="$h_file"
+    [ -z "$FOOTER" ] && export FOOTER="$f_file"
 
 	list_dirs "$src" |
 	(cd "$src" && cpio -pduL "$dst")
@@ -184,28 +184,53 @@ render_html_files() {
 	done
 }
 
+check_and_set_page_var() {
+	var=$1
+	value=$2
+	if [ -n "$value" ]; then
+		sed 's#\$'"$var"'#'"$value"'#ig; /#'"$var"'/d'
+	else
+		sed '/#'"$var"'/,/\/#'"$var"'/d'
+	fi
+}
 
 render_md_files_lowdown() {
+    sitetitle="$3"
+    baseurl="$4"
+
 	while read -r f
 	do
+		echo "file: $f"
         # Create a separate dir/index.html for each md document except those exclusively named index.md
-        if echo "$f" | grep -q 'index\.md'; then
-            dst_file_dir="$2/${f%\index.md}/"
-        else
-            dst_file_dir="$2/${f%\.md}/"
-            mkdir -p "$dst_file_dir"
-        fi
+		echo "$f" | grep -q 'index\.md' \
+			&& page_url="${f%\index.md}" || page_url="${f%\.md}"
+		dst_file_dir="$2/$page_url/"
+		[ -d "$dist_file_dir" ] || mkdir -p "$dst_file_dir"
         dst_file="$dst_file_dir""index.html"
+        input_file="$1/$f"
+
+        content_title=$(sed -n '1,/^[[:space:]]*$/s/^title:[[:space:]]*//ip' $input_file)
+		[ -n "$content_title" ] && pagetitle="$sitetitle &mdash; $content_title" ||
+			pagetitle="$sitetitle"
+        pagedate=$(sed -n '1,/^[[:space:]]*$/s/^date:[[:space:]]*//ip' $input_file)
+		page_url=$(echo "$page_url" | sed 's#^\.##') # remove leading . in url
+        # TODO: need to escape anything?
+		cat "$HEADER" |
+		sed -e 's#\$SITETITLE#'"$sitetitle"'#g' \
+			-e 's#\$PAGETITLE#'"$pagetitle"'#g'\
+			-e 's#\$SITEURL#'"$baseurl"'#g'\
+			-e 's#\$PAGEURL#'"$page_url"'#g' |
+			check_and_set_page_var "CONTENT_TITLE" "$content_title" |
+			check_and_set_page_var "DATE" "$pagedate" \
+			> "$dst_file"
+
         ## If a '---' metadata '...' section present convert title to an H1 heading, delete the rest.
         # If metadata section starts with a yaml-metadata '---', remove for lowdown compatibility
-        (
-        #sed -r -e '/^---/,/^(---)|(\.\.\.)/{/^title/I{s/title:\s*/# /pi}; d}' |
-        sed '1{/^---/d}' |
-        lowdown \
-		-D html-skiphtml \
-        -d autolink) < "$1/$f" |
-		render_html_file "$3" "$4" \
-		> "$dst_file" 
+        sed '1{/^---/d}' "$input_file" | 
+		lowdown -D html-skiphtml -d autolink |
+		render_html_file "$sitetitle" "$baseurl" \
+		>> "$dst_file" 
+		cat "$FOOTER" >> "$dst_file"
 	done
 }
 
@@ -221,32 +246,11 @@ render_md_files_Markdown_pl() {
 
 
 render_html_file() {
-	# h/t Devin Teske
-	awk -v title="$1" -v baseurl="$2" '
-	{ body = body "\n" $0 }
-	END {
-		body = substr(body, 2)
-		if (body ~ /<[Hh][Tt][Mm][Ll]/) {
-			print body
-			exit
-		}
-		if (match(body, /<[[:space:]]*[Hh]1(>|[[:space:]][^>]*>)/)) {
-			t = substr(body, RSTART + RLENGTH)
-			sub("<[[:space:]]*/[[:space:]]*[Hh]1.*", "", t)
-			gsub(/^[[:space:]]*|[[:space:]]$/, "", t)
-			if (t) title = title " &mdash; " t
-		}
-		n = split(ENVIRON["HEADER"], header, /\n/)
-		for (i = 1; i <= n; i++) {
-			if (match(tolower(header[i]), "<title></title>")) {
-				head = substr(header[i], 1, RSTART - 1)
-				tail = substr(header[i], RSTART + RLENGTH)
-				print head "<title>" title "</title>" tail
-			} else print header[i]
-		}
-		print body
-		print ENVIRON["FOOTER"]
-	}'
+	sitetitle="$1"
+	baseurl="$2"
+	# Inject site title if absent, and convert relative links to absolute
+	sed -re 's#(<title>)[[:space:]]*(<\/title>)#\1'"$sitetitle"'\2#i' \
+		-e 's#(href[[:space:]]*=[[:space:]]*")\/#\1'"$baseurl"'\/#ig'
 }
 
 
