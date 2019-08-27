@@ -23,6 +23,8 @@ main() {
 
 	src=$(readlink_f "$1")
 	dst=$(readlink_f "$2")
+	site_title="$3"
+	base_url="$4"
 
 	IGNORE=$(
 		if ! test -f "$src/.ssgignore"
@@ -36,58 +38,29 @@ main() {
 			printf ' ! -path "*/%s*"' "$x"
 		done < "$src/.ssgignore"
 	)
-
-	# files
-
-	site_title="$3"
-	base_url="$4"
-
     [ -z "$HEADER" ] && export HEADER="$src/_header.html"
     [ -z "$FOOTER" ] && export FOOTER="$src/_footer.html"
-
 	list_dirs "$src" | (cd "$src" && cpio -pduL "$dst")
-
 	fs=$(
- 	if test -f "$dst/.files"
-	then list_affected_files "$src" "$dst/.files"
-	else list_files "$1"
-	fi
-	)
-
-	if test -n "$fs"; then
-		echo "$fs" | tee "$dst/.files"
-
-		#echo "$fs" | while read -r f; do
-		#	#case $f in
-		#	#	*.md) 
-		#	#esac
-		#done
-
-		# TODO Refactor. Collapse the internal while loops in here.
-		if test -x "$(which lowdown 2> /dev/null)"; then
-			echo "$fs" | grep '\.md$' |
-			render_md_files_lowdown "$src" "$dst" "$site_title" "$base_url"
-		elif test -x "$(which Markdown.pl 2> /dev/null)"; then
-			echo "$fs" | grep '\.md$' |
-			render_md_files_Markdown_pl "$src" "$dst" "$site_title" "$base_url"
-		else
-			echo "couldn't find lowdown nor Markdown.pl"
-			exit 3
+		if [ -f "$dst/.files" ]; then
+			list_affected_files "$src" "$dst/.files"
+		else 
+			list_files "$1"
 		fi
-
-		echo "$fs" | grep '\.html$' | render_html_files "$src" "$dst" "$site_title"
-
-		echo "$fs" | grep -Ev '\.md$|\.html$' |
-		(cd "$src" && cpio -puL "$dst")
+	)
+	if [ -n "$fs" ]; then
+		echo "$fs" | tee "$dst/.files"
+		echo "$fs" | grep -iE '\.md$|\.html$' | 
+			render_files "$src" "$dst" "$site_title" "$base_url"
+		echo "$fs" | grep -iEv '\.md$|\.html$' |
+			(cd "$src" && cpio -puL "$dst")
 	fi
-
 	printf '[ssg] ' >&2
 	print_status 'file, ' 'files, ' "$fs" >&2
 
 	# sitemap
 	date=$(date +%Y-%m-%d)
  	urls=$(list_pages "$src")
-
 	test -n "$urls" &&
 	render_sitemap "$urls" "$base_url" "$date" > "$dst/sitemap.xml"
 
@@ -162,12 +135,6 @@ list_affected_files() {
 	fi
 }
 
-render_html_files() {
-	while read -r f
-	do render_html_file "$3" < "$1/$f" > "$2/$f"
-	done
-}
-
 check_and_set_page_var() {
 	var=$1
 	value=$2
@@ -184,52 +151,60 @@ extract_metadata() {
 	sed -n '1,/^[[:space:]]*$/s/^'"$name"':[[:space:]]*//ip' $input_file
 }
 
-render_md_files_lowdown() {
+render_files() {
     site_title="$3"
     base_url="$4"
 
+#   filefull=$(basename -- "$1")
+#   filename="${filefull%.*}"
 	while read -r f; do
-		echo "file: $f"
+		echo "Processing: $f"
         # Create a separate dir/index.html for each md document except those exclusively named index.md
-		echo "$f" | grep -q 'index\.md' \
-			&& page_url="${f%\index.md}/" || page_url="${f%\.md}/"
+		echo "$f" | grep -q 'index\..*' \
+			&& page_url="${f%\index.*}/" || page_url="${f%\.*}/"
 		dst_file_dir="$2/$page_url"
 		[ -d "$dist_file_dir" ] || mkdir -p "$dst_file_dir"
         dst_file="$dst_file_dir""index.html"
         input_file="$1/$f"
-
-        content_title=$(extract_metadata "title" "$input_file")
-		[ -n "$content_title" ] && pagetitle="$site_title - $content_title" ||
+		
+		ext="${f##*.}"
+		if [ "$ext" = "md" ]; then
+			content_title=$(extract_metadata "title" "$input_file")
+			pagedate=$(extract_metadata "date" "$input_file")
+		fi
+		[ -n "$content_title" ] &&
+			pagetitle="$site_title - $content_title" ||
 			pagetitle="$site_title"
-        pagedate=$(extract_metadata "date" "$input_file")
 		page_url=$(echo "$page_url" | sed 's#^\.##') # remove leading . in url
-		([ -f "$HEADER" ] && cat "$HEADER" |
-		sed -e 's#\$SITETITLE#'"$site_title"'#g' \
-			-e 's#\$PAGETITLE#'"$pagetitle"'#g'\
-			-e 's#\$SITEURL#'"$base_url"'#g'\
-			-e 's#\$PAGEURL#'"$page_url"'#g' |
-			check_and_set_page_var "CONTENT_TITLE" "$content_title" |
-			check_and_set_page_var "DATE" "$pagedate"
-        # If metadata section starts with a yaml-metadata '---', remove for lowdown compatibility
-        sed '1{/^---/d}' "$input_file" | 
-		lowdown -D html-skiphtml -d autolink
-		[ -f "$FOOTER" ] && cat "$FOOTER") |
-		render_html_file "$site_title" "$base_url" > "$dst_file" 
+		(
+			[ -f "$HEADER" ] && 
+				cat "$HEADER" |
+				sed -e 's#\$SITETITLE#'"$site_title"'#g' \
+					-e 's#\$PAGETITLE#'"$pagetitle"'#g'\
+					-e 's#\$SITEURL#'"$base_url"'#g'\
+					-e 's#\$PAGEURL#'"$page_url"'#g' |
+					check_and_set_page_var "CONTENT_TITLE" "$content_title" |
+					check_and_set_page_var "DATE" "$pagedate"
+			if [ "$ext" = 'md' ]; then
+				if test -x "$(which lowdown 2> /dev/null)"; then
+					# If metadata section starts with a yaml-metadata '---', remove for lowdown compatibility
+					sed '1{/^---/d}' "$input_file" | 
+					lowdown -D html-skiphtml -d autolink
+				elif test -x "$(which Markdown.pl 2> /dev/null)"; then
+					cat "$input_file" | Markdown.pl
+				else
+					echo "couldn't find lowdown nor Markdown.pl"
+					exit 3
+				fi
+			elif [ "$ext" = 'html' ]; then
+				cat "$input_file"
+			fi
+			[ -f "$FOOTER" ] && cat "$FOOTER"
+		) | process_html "$site_title" "$base_url" > "$dst_file" 
 	done
 }
 
-
-render_md_files_Markdown_pl() {
-	while read -r f
-	do
-		Markdown.pl < "$1/$f" |
-		render_html_file "$3" \
-		> "$2/${f%\.md}.html"
-	done
-}
-
-
-render_html_file() {
+process_html() {
 	site_title="$1"
 	base_url="$2"
 	# Inject site title if absent, and convert relative links to absolute
