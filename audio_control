@@ -2,7 +2,7 @@
 
 spotify="dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
 
-[[ -z $ALSA_DEVICE_ID ]] && ALSA_DEVICE_ID=0
+[ -z $ALSA_DEVICE_ID ] && ALSA_DEVICE_ID=0
 
 case "$1" in
 	"on") cmus-remote -Q || cmus ;;
