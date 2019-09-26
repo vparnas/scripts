@@ -12,7 +12,7 @@ st -f 'Liberation Mono:pixelsize=36:antialias=false:autohint=false' -g '50x18' -
 
 `circuits` uses the included `countdown` executable. Invoke `circuits -h` to display the command help.
 
-Here are two sample circuits I've aliased in `~/.bashrc`:
+Here are two sample circuits I've aliased:
 
 ```bash
 alias circuits_abs='circuits -w 10 -d 45 -t 15 -b 30 -n 2 "High Knee Taps" "Russian twists" "Leg raises (6in off ground)" "Hip raises" "Scissor kicks" "Plank knees to elbow" "Chair sit-ups" "Seated in and outs" "Jumping Jacks"'
@@ -20,17 +20,21 @@ alias circuits_abs='circuits -w 10 -d 45 -t 15 -b 30 -n 2 "High Knee Taps" "Russ
 alias circuits_power='circuits -w 10 -d 15 -t 2 -b 30 -n 6 "Bicicle kicks" "Pushups" "Mountain climbers" "Squat boxing jumps" "Burpees" "Boxing hops"'
 ```
 
-## jrnl_helpers
+## copy-cmd-output
 
-Provides useful helper functions for [jrnl](http://jrnl.sh), a universal plain-text journaling utility. The main expansion involves the three time-tracking and reporting functions:
+Using *dmenu* or *slmenu*, depending on your environment, display the commands and their outputs visible in your terminal window, enabling you to copy the one chosen.
 
-+ jrnl_time_start: time track a task using an existing or a newly-entered time-tracking tag. Requires `dmenu`, available in most package managers. Displays the start notification using `notify-send`. 
+## edit-stdin
 
-+ jrnl_time_end: stop time tracking the current task. 
+Using a terminal emulator or a new *tmux* window, depending on your setup, open the terminal buffer contents in the configured text editor.
 
-+ jrnl_report_time: with no parameters, report the total time for all time-tracked tags, including the grand total.
+## linkgrabber
 
-Configure parameters *TIME_TRACK_TAG* and *TIME_TRACK_JOURNAL* to use a different parent time-tracking tag (`@time-track` by default) and a different journal from than the default. You can also reconfigure these in an external `~/.jrnl_helpers.rc` file.
+Using *dmenu* or *slmenu*, depending on your environment, display all links visible in the terminal buffer, and select one to copy.
+
+## minhttpserver
+
+An experimental bash http server using *nc* (netcat). Serves `index.html` by default, or any specifically requested document. Supports GET, GET with querystring, as well as POST methods.
 
 ## record
 
@@ -42,14 +46,22 @@ Uses *pulse* with the `libmp3lame` codec for the audio portion of each recording
 
 Terminate the recording initiated with *record*. Also helpful to assign to a shortcut key in a window manager.
 
+## tabletocsv
+
+Accepts a web page source via standard input, extracts the first table, and converts it to a comma separated value document with values enclosed in quotes. Suited best for conversion of textual content. Probably will break with enough complexity within the table cells (ie much schema). Then again, this sort of data you probably don't need in CSV.
+
+## vcard-out
+
+Extract an entire record of a vcard (vcf) file based on a case-insensitive search pattern. See the script for details.
+
 ## Others
 
-+ audio_control: an interface to music player functions (pause, forward, back, etc). I also incorporated controls for the Spotify Linux client. 
-+ countdown: displays a countdown for the specified interval in seconds. A friendlier version of the basic *sleep* command.
-+ csv_to_markdown_table: Convert the STDIN supplied comma-separated table (with headings) to the simple markdown format. I assigned this to a VIM visual-mode mapping as such:
++ `audio_control`: an interface to music player functions (pause, forward, back, etc). I also incorporated controls for the Spotify Linux client. 
++ `countdown`: displays a countdown for the specified interval in seconds. A friendlier version of the basic *sleep* command.
++ `csv_to_markdown_table`: Convert the STDIN supplied comma-separated table (with headings) to the simple markdown table format. I assigned this to a VIM visual-mode mapping as such:
 
-```vim
-autocmd Filetype markdown,rmd vnoremap ,t :!~/scripts/csv_to_markdown_table<cr>
-```
-
+    ```vim
+    autocmd Filetype markdown,rmd vnoremap ,t :!~/scripts/csv_to_markdown_table<cr>
+    ```
++ `status-mon`: outputs some system information to the console. Outputs more with the -A flag.
 + rsync-wrap: A wrapper for *rsync* using common parameters.

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# $1 = a regex to match one or more vcards against any text, case SENSITIVE. Include empty string "" for ALL records
-# Optional, $2: a regex to extract one or more fields, case INSENSITIVE
+# $1 = a regex to match one or more vcards against any text, case insensitive. Include empty string "" for ALL records
+# Optional, $2: a regex to extract one or more fields, case insensitive
 # ex: vcard-out "Vitaly" "email|tel"
 
 DEF_CONTACTS="$HOME/contacts.vcf"

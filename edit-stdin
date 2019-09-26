@@ -6,7 +6,7 @@ tmpfile=$(mktemp --tmpdir stdin-edit.XXXXXX)
 cat > "$tmpfile"
 
 if [ "$DISPLAY" ]; then
-    st -e $EDITOR $tmpfile && rm $tmpfile
+    $TERMINAL -e $EDITOR $tmpfile && rm $tmpfile
 else
     tmux new-window "$EDITOR $tmpfile; rm $tmpfile"
 fi
