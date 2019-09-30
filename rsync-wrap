@@ -23,17 +23,14 @@
 # --partial-dir=.rsync-partial - use this directory for storing partial files
 # --log-file=~/sync_log.txt
 
-if [ ! $2 ]
-then
-    echo "Need to specify a source and destination paths";
-    exit;
-fi
+[ ! $2 ] && echo "Need to specify a source and destination" && exit
+
 set -x
 #rsync -avChum 
-rsync --archive --verbose --cvs-exclude --exclude='.*.git/' \
+rsync --archive --verbose --cvs-exclude \
     --ignore-missing-args --human-readable --update \
     --prune-empty-dirs --progress --exclude='*.sw*p'  \
-    "$1" "$2" $3 $4
+    "$@"
 set +x
 
 # For backups, use something similar to this:
