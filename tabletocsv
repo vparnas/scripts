@@ -1,20 +1,22 @@
-#!/bin/sh
+#!/bin/perl -w
 
-# Strips out just the table from the html document
-# Removes any html inner comments
-# Converts to CSV, assuming first row to be header row
-# Wraps each field in double quotes 
-# Removes double quotes in header line (in the sed '1 s/"//g' statement)
-# Removes any formatting markup from header line
+# Parse html document, extract the table only, convert to CSV
+# Assume first row to be the header row
+# Wrap each field in double quotes 
 
-sed -re "/<table/,/<\/table/!d" \
-    -e "s/.*(<table)/\1/; s/(<\/table>).*/\1/;" \
-    -e 's/<!--.*-->//g; s/^[[:space:]]*//g; s/[[:space:]]*$//g' |\
-tr -d '\n' |\
-sed -re 's/<\/(TR|THEAD|TBODY)[^>]*>/\n/Ig' \
-    -e 's/<\/?(TABLE|TR|THEAD|TBODY)[^>]*>//Ig' \
-    -e "s/\"/'/g" |\
-sed -re 's/^<T[DH][^>]*>|<\/?T[DH][^>]*>$/"/Ig' \
-    -e 's/[[:space:]]*<\/T[DH][^>]*><T[DH][^>]*>/","/Ig' \
-    -e '/^[[:space:]]*$/d' \
-    -e '1s/"//g; 1s/<\/?[^>]*>//g'
+local $/; # Enable slurp mode to read the whole STDIN
+$_ = <STDIN>;
+
+s/.*(<table.*<\/table>).*/$+/is; # strip out just the table
+s/<!--.*-->//gs; # Strip comments
+s/\n//g;
+s/>\s+</></g; # Strip extraneous spacing
+s/<\/(TR|THEAD|TBODY)[^>]*>/\n/ig; # Correspond newlines with CSV rows
+s/<\/?(TABLE|TR|THEAD|TBODY)[^>]*>//ig; # Remove unnecessary tags
+s/"/'/g; # Inner element double quotes to single, not to conflict with CSV
+# Surround all elements with double quotes
+s/^<T[DH][^>]*>|<\/?T[DH][^>]*>$/"/igm;
+s/\s*<\/T[DH][^>]*><T[DH][^>]*>/","/igm;
+s/^\s*\n//m; # Remove any remaining blank lines
+
+print "$_\n";
