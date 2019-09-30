@@ -2,9 +2,10 @@
 
 show_all=false
 
-while getopts "A" o; do case "${o}" in
-    A) show_all=true;; 
-esac done
+getopts "A" o && 
+    case "${o}" in
+        A) show_all=true;; 
+    esac 
 
 cpu_prc=$(ps axch -o cmd:15,%cpu --sort=-%cpu | head -1 | awk '{print $2}')
 cpu_temp=$(acpi -t | awk '{print $4}')
