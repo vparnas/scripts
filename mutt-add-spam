@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# 1. Reads a piped-in email and extracts the from address
+# 2. If not already present, adds the address to a mutt 'spam' alias   
+#    group, defined as
+#    alias -group spam 
+# 3. Feel free to define $MUTT_ALIAS_FILE in the environment
+
+[ -z "$MUTT_ALIAS_FILE" ] && MUTT_ALIAS_FILE="$XDG_CONFIG_HOME/mutt/aliases.muttrc"
+
+(
+from=$(sed -En '1,/^$/s/^From.*<([^>]+)>/\1/p') && 
+    sed -iE '/alias -group spam/{/'$from'/q;s/$/,'$from'/}' "$MUTT_ALIAS_FILE" &&
+    echo "$from added to spam group"
+)
+
