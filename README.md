@@ -1,6 +1,6 @@
 # scripts
 
-Helper utilities not yet deserving a separate repository
+Helper utilities not yet deserving a separate repository. Descriptions of the more notable ones follow:
 
 ## circuits
 
@@ -35,6 +35,30 @@ Using *dmenu* or *slmenu*, depending on your environment, display all links visi
 ## minhttpserver
 
 An experimental bash http server using *nc* (netcat). Serves `index.html` by default, or any specifically requested document. Supports GET, GET with querystring, as well as POST methods.
+
+## mutt-add-spam
+
+Adds the sender of the currently selected Mutt email to the aliases spam group.
+
+Requires:
+
+1. A spam alias in the mutt aliases file: 
+
+    ```
+    alias -group spam spam test@spam.com,other@spam.com`
+    ```
+
+1. A Mutt macro to pipe the selected email to the script (placed within $PATH).
+
+    ```
+    macro index,pager <Esc>S "<pipe-message>mutt-add-spam; read s<enter>"
+    ```
+
+1. A macro to delete all received emails belonging to the spam group:
+
+    ```
+    macro index ds '<delete-pattern> %f spam<enter>'
+    ```
 
 ## record
 
