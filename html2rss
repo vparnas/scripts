@@ -1,0 +1,86 @@
+#!/usr/bin/perl
+
+# Generates an RSS feed from a one-page rolling blog html
+# Each entry must follow a header of the structure specified in 
+#   $INPUT_ITEM_HEADER_REGEX with the appropriataly named capture groups:
+    #   ?<link>, ?<pubdate> and ?<title>
+# Set $INPUT_END_REGEX to a regex indicating the end of content.
+#   Otherwise the last entry CDATA proceeds to the end of file
+# RSS outputs to STDOUT
+
+# Run with no arguments to display the syntax
+# Pass a config with -c <config> to override the defaults.
+
+use strict;
+use warnings;
+use 5.010;
+use File::Basename;
+use POSIX qw(strftime);
+use Time::Piece;
+
+my $PUBDATE_IN_FORMAT = "%Y-%m-%d";
+my $DATE_OUT_FORMAT = "%a, %d %b %Y %H:%M:%S %z";
+
+my $PROD_BASE_URL = "";
+my $FEED_URL =  "rss.xml"; # Appears in the RSS header
+my $FEED_TITLE = "RSS Feed";
+my $INPUT_END_REGEX = "";
+my $INPUT_ITEM_HEADER_REGEX = ".*h4.*href=\"(?<link>[^\"]*)\">(?<pubdate>[^<]*)<\/a>\\s*(?<title>.*)<\/h4>";
+
+my ($cfg, $input_html)  = ("", "");
+while ($_ = shift) {
+    (/^(-c|--config)/) and $cfg = shift 
+        or $input_html = $_;
+}
+if ($cfg) {
+    (-e "$cfg") or die "Could not open config '$cfg' $!\n";
+    eval `cat $cfg`;
+}
+unless ($input_html) {
+    say "Usage: " . basename($0) . " [-c <config file>] <HTML>";
+    exit;
+}
+open(HTML, '<', $input_html) or die "Could not open html '$input_html' $!\n";
+
+my $build_date = strftime $DATE_OUT_FORMAT, localtime(time());
+
+my $HEADER = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">
+<channel>
+<title>$FEED_TITLE</title>
+<link>$PROD_BASE_URL</link>
+<description></description>
+<lastBuildDate>$build_date</lastBuildDate>
+<atom:link href=\"$FEED_URL\" rel=\"self\" type=\"application/rss+xml\" />";
+
+my $ITEM_HEADER = "
+<item>
+<title>\$title</title>
+<link>$PROD_BASE_URL/\$link</link>
+<guid>$PROD_BASE_URL/\$link</guid>
+<pubDate>\$pubdate</pubDate>
+<description><![CDATA[";
+
+my $ITEM_FOOTER = "]]></description>\n</item>";
+my $FOOTER = "</channel>\n</rss>";
+
+say $HEADER;
+my $in_item = 0;
+while (<HTML>) {
+    chomp;
+    if (/$INPUT_ITEM_HEADER_REGEX/im) {
+        $in_item and say $ITEM_FOOTER;
+        $in_item = 1;
+        my ($link, $pubdate, $title) = ($+{'link'}, $+{'pubdate'}, $+{'title'});
+        ($title =~ /^\s*$/) and $title = $pubdate;
+        my $t = Time::Piece->strptime($pubdate, $PUBDATE_IN_FORMAT);
+        $pubdate = $t->strftime($DATE_OUT_FORMAT);
+        eval "say \"$ITEM_HEADER\"";
+    } else {
+        $INPUT_END_REGEX and (/$INPUT_END_REGEX/im) and last;
+        ($in_item) and say;
+    }
+}
+$in_item and say $ITEM_FOOTER;
+say $FOOTER;
+close HTML;

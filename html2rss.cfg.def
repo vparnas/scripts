@@ -1,0 +1,9 @@
+$PUBDATE_IN_FORMAT = "%Y-%m-%d";
+
+$PROD_BASE_URL = "";
+$FEED_URL =  "rss.xml";
+$FEED_TITLE = "RSS Feed";
+$INPUT_ITEM_HEADER_REGEX = ".*h4.*href=\"(?<link>[^\"]*)\">(?<pubdate>[^<]*)<\/a>\\s*(?<title>.*)<\/h4>";
+$INPUT_END_REGEX = "";
+
+# vim: set ft=perl :
