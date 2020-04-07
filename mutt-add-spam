@@ -10,7 +10,7 @@
 
 (
 from=$(sed -En '1,/^$/s/^From.*<([^>]+)>/\1/p') && 
-    sed -iE '/alias -group spam/{/'$from'/q;s/$/,'$from'/}' "$MUTT_ALIAS_FILE" &&
+    sed -i '/alias -group spam/{/'$from'/q;s/$/,'$from'/}' "$MUTT_ALIAS_FILE" &&
     echo "$from added to spam group"
 )
 

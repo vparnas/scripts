@@ -8,13 +8,11 @@
 #   Otherwise the last entry CDATA proceeds to the end of file
 # RSS outputs to STDOUT
 
-# Run with no arguments to display the syntax
 # Pass a config with -c <config> to override the defaults.
 
 use strict;
 use warnings;
 use 5.010;
-use File::Basename;
 use POSIX qw(strftime);
 use Time::Piece;
 
@@ -27,20 +25,14 @@ my $FEED_TITLE = "RSS Feed";
 my $INPUT_END_REGEX = "";
 my $INPUT_ITEM_HEADER_REGEX = ".*h4.*href=\"(?<link>[^\"]*)\">(?<pubdate>[^<]*)<\/a>\\s*(?<title>.*)<\/h4>";
 
-my ($cfg, $input_html)  = ("", "");
-while ($_ = shift) {
-    (/^(-c|--config)/) and $cfg = shift 
-        or $input_html = $_;
+my $cfg = "";
+if ($_ = shift) {
+    (/^(-c|--config)/) and $cfg = shift or unshift(@ARGV, $_);
 }
 if ($cfg) {
     (-e "$cfg") or die "Could not open config '$cfg' $!\n";
     eval `cat $cfg`;
 }
-unless ($input_html) {
-    say "Usage: " . basename($0) . " [-c <config file>] <HTML>";
-    exit;
-}
-open(HTML, '<', $input_html) or die "Could not open html '$input_html' $!\n";
 
 my $build_date = strftime $DATE_OUT_FORMAT, localtime(time());
 
@@ -66,7 +58,7 @@ my $FOOTER = "</channel>\n</rss>";
 
 say $HEADER;
 my $in_item = 0;
-while (<HTML>) {
+while (<>) {
     chomp;
     if (/$INPUT_ITEM_HEADER_REGEX/im) {
         $in_item and say $ITEM_FOOTER;
@@ -83,4 +75,3 @@ while (<HTML>) {
 }
 $in_item and say $ITEM_FOOTER;
 say $FOOTER;
-close HTML;
