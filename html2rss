@@ -2,9 +2,9 @@
 
 # Generates an RSS feed from a one-page rolling blog html
 # Each entry must follow a header of the structure specified in 
-#   $INPUT_ITEM_HEADER_REGEX with the appropriataly named capture groups:
+#   $INP_ITEM_HDR_REGEX with the appropriataly named capture groups:
     #   ?<link>, ?<pubdate> and ?<title>
-# Set $INPUT_END_REGEX to a regex indicating the end of content.
+# Set $INP_END_REGEX to a regex indicating the end of content.
 #   Otherwise the last entry CDATA proceeds to the end of file
 # RSS outputs to STDOUT
 
@@ -22,8 +22,8 @@ my $DATE_OUT_FORMAT = "%a, %d %b %Y %H:%M:%S %z";
 my $PROD_BASE_URL = "";
 my $FEED_URL =  "rss.xml"; # Appears in the RSS header
 my $FEED_TITLE = "RSS Feed";
-my $INPUT_END_REGEX = "";
-my $INPUT_ITEM_HEADER_REGEX = ".*h4.*href=\"(?<link>[^\"]*)\">(?<pubdate>[^<]*)<\/a>\\s*(?<title>.*)<\/h4>";
+my $INP_END_REGEX = "";
+my $INP_ITEM_HDR_REGEX = ".*h4.*href=\"(?<link>[^\"]*)\">(?<pubdate>[^<]*)<\/a>\\s*(?<title>.*)<\/h4>";
 
 my $cfg = "";
 if ($_ = shift) {
@@ -36,7 +36,7 @@ if ($cfg) {
 
 my $build_date = strftime $DATE_OUT_FORMAT, localtime(time());
 
-my $HEADER = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+my $OUT_HDR = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">
 <channel>
 <title>$FEED_TITLE</title>
@@ -45,7 +45,7 @@ my $HEADER = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <lastBuildDate>$build_date</lastBuildDate>
 <atom:link href=\"$FEED_URL\" rel=\"self\" type=\"application/rss+xml\" />";
 
-my $ITEM_HEADER = "
+my $OUT_ITEM_HDR = "
 <item>
 <title>\$title</title>
 <link>$PROD_BASE_URL/\$link</link>
@@ -53,25 +53,25 @@ my $ITEM_HEADER = "
 <pubDate>\$pubdate</pubDate>
 <description><![CDATA[";
 
-my $ITEM_FOOTER = "]]></description>\n</item>";
-my $FOOTER = "</channel>\n</rss>";
+my $OUT_ITEM_FTR = "]]></description>\n</item>";
+my $OUT_FTR = "</channel>\n</rss>";
 
-say $HEADER;
+say $OUT_HDR;
 my $in_item = 0;
 while (<>) {
     chomp;
-    if (/$INPUT_ITEM_HEADER_REGEX/im) {
-        $in_item and say $ITEM_FOOTER;
+    if (/$INP_ITEM_HDR_REGEX/im) {
+        $in_item and say $OUT_ITEM_FTR;
         $in_item = 1;
         my ($link, $pubdate, $title) = ($+{'link'}, $+{'pubdate'}, $+{'title'});
         ($title =~ /^\s*$/) and $title = $pubdate;
         my $t = Time::Piece->strptime($pubdate, $PUBDATE_IN_FORMAT);
         $pubdate = $t->strftime($DATE_OUT_FORMAT);
-        eval "say \"$ITEM_HEADER\"";
+        eval "say \"$OUT_ITEM_HDR\"";
     } else {
-        $INPUT_END_REGEX and (/$INPUT_END_REGEX/im) and last;
+        $INP_END_REGEX and (/$INP_END_REGEX/im) and last;
         ($in_item) and say;
     }
 }
-$in_item and say $ITEM_FOOTER;
-say $FOOTER;
+$in_item and say $OUT_ITEM_FTR;
+say $OUT_FTR;
