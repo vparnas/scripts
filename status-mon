@@ -12,13 +12,14 @@ cpu_temp=$(acpi -t | awk '{print $4}')
 mem_free=$(free -h | awk '/^Mem/ {print $7}')
 wifi_stat=$(cat /sys/class/net/w*/operstate)
 wifi_prc=$(grep "^\s*w" /proc/net/wireless | awk '{ print int($3 * 100 / 70) }')
+bat_prc=$(acpi -b | egrep -o '[0-9]+%')
 echo \
     $(printf "CPU: %-4s%%, %sC, " $cpu_prc $cpu_temp) \
     $(printf "Mem: %s, " $mem_free) \
+    $(printf "Bat: %s, " $bat_prc) \
     $(printf "Wifi: %s %03d%%" $wifi_stat $wifi_prc)
 
 if ( $show_all ); then
-    acpi -b # battery
-    [ -f ~/cmus-status.txt ] && cat ~/cmus-status.txt # current song playing
+    [ -f $XDG_CONFIG_HOME/cmus/cmus-status.txt ] && cat $XDG_CONFIG_HOME/cmus/cmus-status.txt # current song playing
     ps axch -o cmd:15,%cpu --sort=-%cpu | head -5
 fi;
