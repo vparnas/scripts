@@ -1,0 +1,12 @@
+#!/bin/bash
+
+paths="$@"
+[ -z "$paths" ] && echo "Must include one or more search paths" && exit 1
+VERBOSE=true
+while read -r orig new; do
+    grep -rl $orig $paths | \
+    while read -r file; do 
+        $VERBOSE && echo "$file: $orig -> $new"
+        sed -i "s#$orig#$new#g" $file
+    done
+done
