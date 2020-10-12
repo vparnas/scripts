@@ -1,12 +1,36 @@
 #!/bin/bash
 
+# <updates file>: should contain lines of two columns:
+#   <orig pattern> <new pattern>
+#   Will be passed to sed verbatim
+#   Must escape '#' characters, used as delimiters in sed
+# <search path(s)>: one or more directories/files grep will recursively explore
+
+updates_input="$1"; shift
 paths="$@"
-[ -z "$paths" ] && echo "Must include one or more search paths" && exit 1
-VERBOSE=true
+([ -z "$updates_input" ] || [ -z "$paths" ]) && \
+    echo "${0##*/}: <updates file> <search path(s)>" && exit 1
+
+# First variant: automatically execute all search/replace ops
+
+#VERBOSE=true
+#while read -r orig new; do
+#    for file in $(grep -rl $orig $paths); do
+#        $VERBOSE && echo "$file: $orig -> $new"
+#        sed -i "s#$orig#$new#g" $file
+#    done
+#done < "$updates_input"
+
+# Second variant: Preview all search/replace commands in a text buffer first
+
+tmpfile=$(mktemp --tmpdir global-replace.XXXXXX)
+trap 'rm "$tmpfile"' 0 1 15
+echo "# Remove any non-comment lines below you don't wish to execute and SAVE.
+# Whatever remains upon exit will execute." > $tmpfile
 while read -r orig new; do
-    grep -rl $orig $paths | \
-    while read -r file; do 
-        $VERBOSE && echo "$file: $orig -> $new"
-        sed -i "s#$orig#$new#g" $file
+    for file in $(grep -rl $orig $paths); do
+        echo "sed -i 's#$orig#$new#g' $file && echo '$file: $orig -> $new'"
     done
-done
+done < "$updates_input" >> $tmpfile
+$EDITOR "$tmpfile"
+sh $tmpfile
