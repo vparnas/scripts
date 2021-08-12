@@ -1,27 +1,6 @@
 #!/bin/bash
 
-# use -n (--dry-run) to "perform a trial run with no changes made"
-# --delete - delete extraneous files from dest dirs
-# -a (--archive)
-# -v (--verbose)
-# -h (--human-readable)
-# -C (--cvs-exclude) - "auto-ignore files in the same way CVS does"
-# -u (--update)  = skip files that are newer on the receiver
-# -z (--compress)
-# -i, --itemize-changes
-# -b = backup (same dir, suffix = ~)
-# -m (--prune-empty-dirs)
-# -H, --hard-links - preserve hard links   
-# --size-only - ignore time-stamp comparison
-# --existing - don't create new files on the receiver
-# --ignore-existing - new files only
-# Combine the two above to not update any files (ex: only to delete extraneous files)
-# --partial - keep partially transferred files
-# --progress - display transfer rate
-# --stats - display statistics
-# -P - implies --partial --progress
-# --partial-dir=.rsync-partial - use this directory for storing partial files
-# --log-file=~/sync_log.txt
+# For *most* ops, 'rsync -auvC' provides the satisfactory behavior
 
 [ ! $2 ] && echo "Need to specify a source and destination" && exit
 

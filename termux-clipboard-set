@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# *A major hack* to use pass -c (temporal password copy) for *termux* systems without a working termux-api that wouldl enable termux-clipboard-set
+# Requires usage within the *tmux* terminal multiplexor setting
+# Place this in your path named precisely *termux-clipboard-set*, and pass -c on termux will pipe the password to this script, which copies it to the tmux temp buffer for 45 seconds
+
+xargs tmux set-buffer -b temp ; (sleep 45 ; tmux delete-buffer -b temp) & >/dev/null
