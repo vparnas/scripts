@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Installs packages from CSV input in the following format, line by line:
+## name, tag, custom path, comment
+#package1,t,,[optional comment]
+#package2,t,,[optional comment]
+#git@github.com:user/rep1.git,g,,[optional comment]
+#git@github.com:user/rep2.git,g,,[optional comment]
+
+GIT_TOP_DIR=~/work
+CONFIRM=true
+
+[ -z $1 ] && echo "$0: Need valid input file" && exit 1
+input=$(realpath $1)
+
+mkdir -p $GIT_TOP_DIR
+cd $GIT_TOP_DIR
+echo -e "Setting git project dir to $GIT_TOP_DIR\n"
+
+declare -A inst=(
+    [a]='sudo pacman -S'
+    [t]='pkg install'
+    [g]='git clone'
+    [g1]='git clone --depth 1'
+    [p]='pip install'
+)
+#declare inst_ordered=${!inst[@]}
+declare inst_ordered=( a t g g1 p )
+
+confirm_and_exec() {
+    args=$@
+    $CONFIRM && read -p "${args[@]} ? [Y/n] " -n 1 -r resp && echo
+    [[ $resp =~ ^(Y|y| )$ ]] || [[ -z $resp ]] && $@
+}
+export -f confirm_and_exec
+
+for tag in ${inst_ordered[@]}; do
+    # Need seperate search/replace blocks to avoid trailing blanks
+    # where the 2nd atom doesn't exist, due to the xargs -L particularity
+    [[ $tag =~ ^g ]] && ARGS="-L 1" || ARGS=
+    sed -nE \
+        -e "s/(^\w[^,]+),$tag\>,([^,]+).*/\1 \2/p" \
+        -e "s/(^\w[^,]+),$tag\>,,.*/\1/p" $input |
+        xargs $ARGS echo | xargs -I{} -o -r \
+        bash -c "CONFIRM=$CONFIRM confirm_and_exec ${inst[$tag]} {}"
+done

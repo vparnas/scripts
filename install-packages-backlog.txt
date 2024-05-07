@@ -1,0 +1,23 @@
+#awk -F ',' '/,a/{print $1}' packages.tablet.csv | while read p; do pkg install $p; done
+#awk -F ',' '{if ($2 == "a") print $1}'
+#for p in $(sed -nE 's/([^,]+),a/\1/p' packages.tablet.csv); do echo $p; done
+# -p, --interactive and --max-args=1 to run a separate invocation per argument
+# -r, --no-run-if-empty to avoid the terminating blank argument
+# -o, --open-tty (needed for interactive mode)
+#sed -nE 's/(^\w[^,]+),a\>.*/\1/p' packages.tablet.csv | xargs -o -p -r pkg install
+
+## Move only the missing files (and directories), non-recursively from dir1 to dir2
+#shopt -s dotglob
+#mv -n -v dir1/* dir2/
+## Or
+#find /path/subfolder -maxdepth 1 -type f -name '*' -exec mv -n {} /path \;
+
+#IFS=','
+#grep -v '^#' $input |
+#while read name tag path comment; do
+#    [ -n "$comment" ] && echo "Installing the $comment ..."
+#    [ -z ${inst[$tag]} ] && echo "Unrecognized tag $tag for $name, skip ..." \
+#        && continue
+#    #eval "${inst[$tag]} $name $path"
+#    echo "${inst[$tag]} $name $path"
+#done
