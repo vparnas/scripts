@@ -12,7 +12,7 @@ cpu_temp=$(acpi -t | awk '{print $4}')
 mem_free=$(free -h | awk '/^Mem/ {print $7}')
 wifi_stat=$(cat /sys/class/net/w*/operstate)
 wifi_prc=$(grep "^\s*w" /proc/net/wireless | awk '{ print int($3 * 100 / 70) }')
-bat_prc=$(acpi -b | egrep -o '[0-9]+%')
+bat_prc=$(acpi -b | grep -E -o '[0-9]+%')
 echo \
     $(printf "CPU: %-4s%%, %sC, " $cpu_prc $cpu_temp) \
     $(printf "Mem: %s, " $mem_free) \
