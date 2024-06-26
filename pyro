@@ -22,9 +22,10 @@ if ($basevar) {
 } else {
      die "No variable block defined in $infile\n";
 }
+# Process output while exists some variable to fill
 while ($output =~ /\@\w+\@/) {
     my $varname = $&;
-    ($input =~ /\#$varname\n(.*?)\n\n/s)
+    ($input =~ /\#$varname[^\n]*\n(.*?)\n\n/s) # Ignore trailing content/comments
         or die "Did not find variable $varname in $infile.\n";
     my @varblock = split (/\n/, $1);
     my $randline = $varblock[rand @varblock];
