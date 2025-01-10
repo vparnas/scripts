@@ -12,8 +12,13 @@ case "$1" in
 	"mute") amixer -D pulse set Master 1+ toggle ;;
 	"pause") cmus-remote --pause ;;
 	"pause_playback") cmus-remote --pause-playback ;;
+	"mpv_pause") echo '{ "command": ["cycle", "pause"] }' | socat - ~/temp/mpv-socket >> /dev/null ;;
 	"forward") cmus-remote --seek +5 ;;
 	"back") cmus-remote --seek -5 ;;
+	"mpv_forward") echo '{ "command": ["seek", 5, "relative"] }' | socat - ~/temp/mpv-socket >> /dev/null ;;
+	"mpv_back") echo '{ "command": ["seek", -5, "relative"] }' | socat - ~/temp/mpv-socket >> /dev/null ;;
+	"mpv_faster") echo '{ "command": ["add", "speed", 0.05] }' | socat - ~/temp/mpv-socket >> /dev/null ;;
+	"mpv_slower") echo '{ "command": ["add", "speed", -0.05] }' | socat - ~/temp/mpv-socket >> /dev/null ;;
 	"next") cmus-remote --next ;;
 	"prev") cmus-remote --prev ;;
 	"replay") cmus-remote -k 00:00:00 ;;
